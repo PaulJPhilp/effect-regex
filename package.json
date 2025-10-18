@@ -1,0 +1,14 @@
+{
+  "name": "effect-regex",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@biomejs/biome": "2.2.6",
+    "@types/bun": "latest",
+    "ultracite": "5.6.4"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
