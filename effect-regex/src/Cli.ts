@@ -1,8 +1,10 @@
 import * as Command from "@effect/cli/Command"
 import * as Args from "@effect/cli/Args"
+import * as Options from "@effect/cli/Options"
 import { Console, Effect } from "effect"
-import { emit } from "./core/builder.js"
+import { emit, RegexBuilder } from "./core/builder.js"
 import { STANDARD_PATTERNS } from "./std/patterns.js"
+import { optimize } from "./core/optimizer.js"
 
 // build-pattern command
 const buildPatternCommand = Command.make("build-pattern", {
@@ -53,9 +55,59 @@ const lintCommand = Command.make("lint", {
   })
 })
 
+// optimize command
+const optimizeCommand = Command.make("optimize", {
+  patternName: Args.text("pattern-name").pipe(
+    Args.withDescription("Name of standard library pattern to optimize")
+  ),
+}, ({ patternName }, options) => {
+  return Effect.gen(function* () {
+    const stdPattern = STANDARD_PATTERNS[patternName as keyof typeof STANDARD_PATTERNS]
+    if (!stdPattern) {
+      yield* Console.error(`Unknown standard pattern: ${patternName}`)
+      yield* Console.error(`Available patterns: ${Object.keys(STANDARD_PATTERNS).join(", ")}`)
+      return
+    }
+
+    // Get the AST
+    const ast = stdPattern.pattern.getAst()
+
+    // Emit before optimization
+    const beforeResult = emit(stdPattern.pattern, "js", false)
+
+    // Optimize
+    const result = yield* optimize(ast)
+
+    // Emit after optimization
+    const optimizedBuilder = new RegexBuilder(result.optimized)
+    const afterResult = emit(optimizedBuilder, "js", false)
+
+    // Output comparison
+    yield* Console.log(JSON.stringify({
+      pattern: patternName,
+      before: {
+        pattern: beforeResult.pattern,
+        nodes: result.beforeSize
+      },
+      after: {
+        pattern: afterResult.pattern,
+        nodes: result.afterSize
+      },
+      optimization: {
+        nodesReduced: result.nodesReduced,
+        reductionPercent: result.beforeSize > 0
+          ? Math.round((result.nodesReduced / result.beforeSize) * 100)
+          : 0,
+        passesApplied: result.passesApplied,
+        iterations: result.passesApplied.length
+      }
+    }, null, 2))
+  })
+})
+
 // Main command - simplified for M1
 const command = Command.make("effect-regex", {
-  subcommands: [buildPatternCommand, lintCommand]
+  subcommands: [buildPatternCommand, lintCommand, optimizeCommand]
 })
 
 export const run = Command.run(command, {

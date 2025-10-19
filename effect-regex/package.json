@@ -44,5 +44,8 @@
   },
   "patchedDependencies": {
     "@changesets/get-github-info@0.6.0": "patches/@changesets__get-github-info@0.6.0.patch"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.67.0"
   }
 }

@@ -141,6 +141,150 @@ Cline uses MCP servers via the VS Code settings.
 3. Check the MCP servers status
 4. effect-regex should show as "Connected" with 7 tools
 
+## AI-Powered Pattern Generation (Optional)
+
+The `propose_pattern` tool can use AI (via Anthropic Claude API) to generate regex patterns from examples. This is an optional feature that provides more intelligent pattern proposals.
+
+### Enabling LLM Integration
+
+To enable AI-powered pattern generation, you need to provide an Anthropic API key.
+
+#### Getting an API Key
+
+1. Sign up for an account at [Anthropic Console](https://console.anthropic.com/)
+2. Navigate to API Keys section
+3. Create a new API key
+4. Copy the key (starts with `sk-ant-...`)
+
+#### Configuration with API Key
+
+**Claude Desktop:**
+
+```json
+{
+  "mcpServers": {
+    "effect-regex": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/effect-regex/effect-regex/dist/server.cjs"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY": "sk-ant-..."
+      }
+    }
+  }
+}
+```
+
+**Cline (VS Code):**
+
+```json
+{
+  "cline.mcpServers": {
+    "effect-regex": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/effect-regex/effect-regex/dist/server.cjs"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY": "sk-ant-..."
+      }
+    }
+  }
+}
+```
+
+**Important Security Notes**:
+- Never commit API keys to version control
+- Store keys in environment variables or secure credential managers
+- Consider using `.env` files with proper `.gitignore` configuration
+- Monitor API usage and costs at [Anthropic Console](https://console.anthropic.com/)
+
+### How It Works
+
+When an API key is configured:
+
+1. **propose_pattern** first attempts to use Claude to generate patterns
+2. Prompts include RegexBuilder API documentation and your examples
+3. LLM response is validated and safely evaluated
+4. If LLM generation fails, automatically falls back to heuristic generation
+5. No API key required for basic heuristic-based pattern generation
+
+### LLM vs Heuristic Generation
+
+| Feature | LLM (with API key) | Heuristic (default) |
+|---------|-------------------|---------------------|
+| **Accuracy** | High - understands context | Medium - pattern matching |
+| **Confidence** | 0.85+ | 0.7 |
+| **Cost** | API usage fees | Free |
+| **Speed** | 2-5 seconds | Instant |
+| **Examples needed** | 2-3 positive | 3+ recommended |
+| **Context understanding** | Yes | Limited |
+| **Fallback** | Automatic to heuristic | N/A |
+
+### Example: AI-Powered Email Pattern
+
+**With API key:**
+```json
+{
+  "name": "propose_pattern",
+  "arguments": {
+    "positiveExamples": ["user@example.com", "test@test.org"],
+    "negativeExamples": ["@example.com", "not-email"],
+    "context": "email addresses for contact forms"
+  }
+}
+```
+
+Response includes:
+- More precise character class for email local part
+- Proper TLD validation (2+ characters)
+- Better handling of subdomains
+- Higher confidence score (0.85+)
+- Detailed reasoning about pattern choices
+
+**Without API key:**
+```json
+// Same call works, but uses heuristic generation
+// - Simpler pattern
+// - Lower confidence (0.7)
+// - Basic pattern matching
+```
+
+### Cost Considerations
+
+- **Model**: claude-3-5-sonnet-20241022
+- **Typical usage**: ~500-1000 tokens per pattern generation
+- **Cost**: ~$0.003-0.015 per pattern (as of Feb 2025)
+- **Retry logic**: Up to 3 attempts with exponential backoff
+- **Rate limits**: Automatic handling with delays
+
+### Troubleshooting LLM Integration
+
+**API Key Not Working:**
+1. Check key format: should start with `sk-ant-`
+2. Verify key is active in Anthropic Console
+3. Check for copy/paste errors (no spaces)
+4. Restart AI assistant after adding key
+
+**LLM Calls Timing Out:**
+1. Check internet connectivity
+2. Verify Anthropic API status
+3. Consider rate limiting (wait between calls)
+4. Falls back to heuristics automatically
+
+**Unexpected Costs:**
+1. Monitor usage in Anthropic Console
+2. Set spending limits
+3. Use heuristics for development/testing
+4. Enable LLM only for production pattern generation
+
+**Pattern Quality Issues:**
+1. Provide more examples (3-5 positive, 2-3 negative)
+2. Add context description
+3. Review and refine generated patterns
+4. Use test_regex to validate results
+
 ## Usage Examples
 
 ### 1. Building Standard Library Patterns

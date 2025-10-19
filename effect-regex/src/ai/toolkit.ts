@@ -2,6 +2,8 @@ import { Effect } from "effect";
 import { RegexBuilder, emit } from "../core/builder.js";
 import { testRegex, type RegexTestCase, type TestResult } from "../core/tester.js";
 import { lint } from "../core/linter.js";
+import { callLLMWithRetry, isLLMAvailable, type LLMConfig, LLMError, LLMConfigError } from "./llm-client.js";
+import { generateProposalPrompt, generateRefinementPrompt, parseRegexBuilderCode, validateRegexBuilderCode } from "./prompts.js";
 
 /**
  * AI Toolkit for regex pattern development
@@ -31,9 +33,61 @@ export interface PatternDevelopmentResult {
 }
 
 /**
- * Propose an initial regex pattern based on examples
+ * Propose a pattern using LLM (AI-powered)
  */
-export const proposePattern = (
+export const proposePatternWithLLM = (
+  positiveExamples: readonly string[],
+  negativeExamples: readonly string[],
+  context?: string,
+  llmConfig?: Partial<LLMConfig>
+): Effect<LLMError | LLMConfigError, never, PatternProposal> => {
+  return Effect.gen(function* () {
+    // Generate prompt
+    const prompt = generateProposalPrompt(positiveExamples, negativeExamples, context);
+
+    // Call LLM
+    const response = yield* callLLMWithRetry(prompt, llmConfig);
+
+    // Parse response
+    const code = parseRegexBuilderCode(response);
+    if (!code || !validateRegexBuilderCode(code)) {
+      return yield* Effect.fail(
+        new LLMError("Failed to parse valid RegexBuilder code from LLM response")
+      );
+    }
+
+    // Evaluate the code to get the pattern
+    // SAFETY: Code has been validated to only contain RegexBuilder calls
+    let pattern: RegexBuilder;
+    try {
+      // Create a safe evaluation context
+      const evalCode = `(function() { ${code} })()`;
+      pattern = eval(evalCode);
+    } catch (error) {
+      return yield* Effect.fail(
+        new LLMError(`Failed to evaluate LLM-generated code: ${(error as Error).message}`)
+      );
+    }
+
+    // Generate test cases from examples
+    const testCases: RegexTestCase[] = [
+      ...positiveExamples.map(ex => ({ input: ex, shouldMatch: true })),
+      ...negativeExamples.map(ex => ({ input: ex, shouldMatch: false })),
+    ];
+
+    return {
+      pattern,
+      reasoning: `LLM-generated pattern based on ${positiveExamples.length} positive and ${negativeExamples.length} negative examples`,
+      confidence: 0.85, // Higher confidence for AI-generated patterns
+      testCases,
+    };
+  });
+};
+
+/**
+ * Propose an initial regex pattern based on examples (heuristic fallback)
+ */
+export const proposePatternHeuristic = (
   positiveExamples: readonly string[],
   negativeExamples: readonly string[],
   context?: string
@@ -76,6 +130,38 @@ export const proposePattern = (
       confidence: 0.7, // Moderate confidence for basic analysis
       testCases,
     };
+  });
+};
+
+/**
+ * Propose a pattern intelligently: Try LLM first, fall back to heuristics
+ */
+export const proposePattern = (
+  positiveExamples: readonly string[],
+  negativeExamples: readonly string[],
+  context?: string,
+  llmConfig?: Partial<LLMConfig>
+): Effect<never, never, PatternProposal> => {
+  return Effect.gen(function* () {
+    // Check if LLM is available
+    const llmAvailable = yield* isLLMAvailable(llmConfig?.provider || "anthropic");
+
+    if (llmAvailable) {
+      // Try LLM-based generation
+      const llmResult = yield* Effect.either(
+        proposePatternWithLLM(positiveExamples, negativeExamples, context, llmConfig)
+      );
+
+      if (llmResult._tag === "Right") {
+        return llmResult.right;
+      }
+
+      // LLM failed, log and fall back
+      console.warn("LLM pattern generation failed, falling back to heuristics:", llmResult.left.message);
+    }
+
+    // Fall back to heuristic-based generation
+    return yield* proposePatternHeuristic(positiveExamples, negativeExamples, context);
   });
 };
 

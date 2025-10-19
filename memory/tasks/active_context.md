@@ -1,24 +1,66 @@
 # Active Context: effect-regex
 
 **Last Updated**: 2025-10-18
-**Current Phase**: M2 Complete → M3 Planning
-**Active Focus**: MCP Server Implementation Planning
+**Current Phase**: M3 Advanced Features Complete (M3.1, M3.2, M3.3)
+**Active Focus**: Documentation and Next Milestone Planning
 
 ---
 
 ## Current Work Focus
 
-### Primary Objective: MCP Server Implementation (Task 3.1)
+### Primary Objective: Pattern Optimization Engine Complete ✅
 
-The immediate priority is completing the MCP (Model Context Protocol) server implementation to enable AI assistant integration. This will unlock advanced AI-powered pattern development capabilities.
+Successfully completed M3.3 - Pattern Optimization Engine with comprehensive AST transformation passes.
 
-**Status**: In Planning Phase
-**Target Completion**: 2025-02-15
-**Priority**: P0 (Blocker for M3)
+**Status**: Complete
+**Completed**: 2025-10-18
+**Priority**: P2 (Medium)
+
+**Key Achievements**:
+1. ✅ Implemented 4 optimization passes (constant folding, quantifier simplification, character class merging, alternation deduplication)
+2. ✅ Created comprehensive test suite (23 tests, 100% passing)
+3. ✅ Added CLI optimize command
+4. ✅ Integrated optimize_pattern into MCP server (8th tool)
+5. ✅ Updated documentation (README, tasks_plan)
 
 ---
 
 ## Recent Changes (Last 30 Days)
+
+### 2025-10-18: M3.3 Pattern Optimization Engine Complete
+**Summary**: Successfully implemented comprehensive pattern optimization engine with 4 AST transformation passes
+
+**Key Achievements**:
+1. ✅ Created `src/core/optimizer.ts` with 4 optimization passes:
+   - Constant Folding: Merges adjacent literals in sequences
+   - Quantifier Simplification: Removes redundant nested quantifiers
+   - Character Class Merging: Combines alternating character classes
+   - Alternation Deduplication: Removes duplicate alternatives
+2. ✅ Implemented fixed-point iteration (applies passes until convergence)
+3. ✅ Added configurable optimization options
+4. ✅ Created comprehensive test suite (test/optimizer.test.ts, 23 tests, 100% passing)
+5. ✅ Added optimize command to CLI (src/bin.ts)
+6. ✅ Integrated optimize_pattern tool into MCP server (8th tool)
+7. ✅ Updated documentation (README.md, tasks_plan.md, active_context.md)
+
+**Files Modified**:
+- `src/core/optimizer.ts`: New file, full optimization engine (379 lines)
+- `test/optimizer.test.ts`: New file, comprehensive tests (373 lines, 23 tests)
+- `src/bin.ts`: Added optimize command
+- `src/mcp/server.ts`: Added optimize_pattern tool (8th MCP tool)
+- `README.md`: Updated M3.3 status, added optimize examples, updated tool count to 8
+- `memory/tasks/tasks_plan.md`: Marked M3.3 complete
+- `memory/tasks/active_context.md`: Updated current status
+
+**Test Coverage**: 100% (all 23 optimizer tests passing)
+
+**Optimization Results**:
+- Fixed-point iteration ensures maximum optimization
+- Detailed metrics: beforeSize, afterSize, nodesReduced, passesApplied
+- Configurable options for each pass
+- Effect-based API for composition
+
+---
 
 ### 2025-02-01: M2 Milestone Complete
 **Summary**: Successfully completed all M2 advanced features

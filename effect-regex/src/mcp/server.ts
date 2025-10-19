@@ -16,6 +16,7 @@ import { explain, formatExplanation } from "../core/explainer.js";
 import { STANDARD_PATTERNS } from "../std/patterns.js";
 import { buildCommandRegex } from "../command/command-spec.js";
 import { proposePattern, developPattern } from "../ai/toolkit.js";
+import { optimize } from "../core/optimizer.js";
 
 // MCP Tool definitions with schemas
 const TOOLS = [
@@ -244,6 +245,57 @@ const TOOLS = [
         }
       },
       required: ["positiveExamples"]
+    }
+  },
+  {
+    name: "optimize_pattern",
+    description: "Optimize a regex pattern by applying AST transformation passes",
+    inputSchema: {
+      type: "object",
+      properties: {
+        input: {
+          oneOf: [
+            {
+              type: "object",
+              properties: {
+                type: { const: "std" },
+                name: {
+                  enum: Object.keys(STANDARD_PATTERNS),
+                  description: "Standard library pattern name"
+                }
+              },
+              required: ["type", "name"]
+            },
+            {
+              type: "object",
+              properties: {
+                type: { const: "pattern" },
+                pattern: {
+                  type: "string",
+                  description: "Regex pattern string (limited optimization without AST)"
+                }
+              },
+              required: ["type", "pattern"]
+            }
+          ]
+        },
+        options: {
+          type: "object",
+          properties: {
+            constantFolding: { type: "boolean", default: true },
+            quantifierSimplification: { type: "boolean", default: true },
+            characterClassMerging: { type: "boolean", default: true },
+            alternationDedup: { type: "boolean", default: true },
+            maxPasses: { type: "integer", minimum: 1, maximum: 10, default: 5 }
+          }
+        },
+        dialect: {
+          enum: ["js", "re2", "pcre"],
+          default: "js",
+          description: "Target dialect for emission"
+        }
+      },
+      required: ["input"]
     }
   }
 ];
@@ -571,6 +623,76 @@ async function handleProposePattern(args: any) {
   }
 }
 
+async function handleOptimizePattern(args: any) {
+  validateInput(args);
+
+  const { input, options = {}, dialect = "js" } = args;
+
+  try {
+    let ast;
+    let patternName;
+
+    if (input.type === "std") {
+      const stdPattern = STANDARD_PATTERNS[input.name as keyof typeof STANDARD_PATTERNS];
+      if (!stdPattern) {
+        throw new McpError(ErrorCode.InvalidParams, `Unknown standard pattern: ${input.name}`);
+      }
+      ast = stdPattern.pattern.getAst();
+      patternName = input.name;
+    } else {
+      // For pattern strings, we can't optimize without parsing
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        "Pattern string optimization not yet supported. Use standard library patterns or provide AST directly."
+      );
+    }
+
+    // Emit before optimization
+    const beforeBuilder = new RegexBuilder(ast);
+    const beforeResult = emit(beforeBuilder, dialect as any, false);
+
+    // Run optimization
+    const result = await Effect.runPromise(optimize(ast, options));
+
+    // Emit after optimization
+    const optimizedBuilder = new RegexBuilder(result.optimized);
+    const afterResult = emit(optimizedBuilder, dialect as any, false);
+
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          pattern: patternName || "custom",
+          before: {
+            pattern: beforeResult.pattern,
+            nodes: result.beforeSize,
+            captureMap: beforeResult.captureMap
+          },
+          after: {
+            pattern: afterResult.pattern,
+            nodes: result.afterSize,
+            captureMap: afterResult.captureMap
+          },
+          optimization: {
+            nodesReduced: result.nodesReduced,
+            reductionPercent: result.beforeSize > 0
+              ? Math.round((result.nodesReduced / result.beforeSize) * 100)
+              : 0,
+            passesApplied: result.passesApplied,
+            iterations: result.passesApplied.length
+          },
+          dialect
+        }, null, 2)
+      }]
+    };
+  } catch (error) {
+    throw new McpError(
+      ErrorCode.InternalError,
+      `Optimization failed: ${(error as Error).message}`
+    );
+  }
+}
+
 // Create and start MCP server
 const server = new Server(
   {
@@ -611,6 +733,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await handleLibraryList(args);
       case "propose_pattern":
         return await handleProposePattern(args);
+      case "optimize_pattern":
+        return await handleOptimizePattern(args);
       default:
         throw new McpError(
           ErrorCode.MethodNotFound,

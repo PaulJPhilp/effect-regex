@@ -55,7 +55,9 @@ pnpm check
 
 ✅ **M1 Complete**: Core AST, fluent builder, dialect gating, standard library (Tier 1), CLI MVP
 ✅ **M2 Complete**: CommandSpec builder, tester with corpora, std library (Tier 2/3), improved lint, explain functionality, AI toolkit skeleton
-🚀 **M3 In Progress**: MCP server (7 tools), AI pattern generation, pattern optimization
+✅ **M3.1 Complete**: MCP server (8 tools), comprehensive testing and documentation
+✅ **M3.2 Complete**: AI-powered pattern generation using Anthropic Claude API with automatic fallback
+✅ **M3.3 Complete**: Pattern optimization engine with 4 AST transformation passes
 
 ## Development
 
@@ -67,8 +69,9 @@ The root workspace uses Bun for fast development and package management. The `ef
 - **CommandSpec Builder**: Generate regexes from CLI specifications with semantic capture maps
 - **Testing Framework**: Comprehensive pattern testing with timeout protection
 - **AI Toolkit**: Propose → test → refine loop for pattern development
-- **CLI**: build-pattern, lint, explain, test commands with JSON output
-- **MCP Server**: 7 tools for AI assistant integration (Claude Desktop, Cline)
+- **Optimization Engine**: 4 AST transformation passes (constant folding, quantifier simplification, character class merging, alternation deduplication)
+- **CLI**: build-pattern, lint, explain, test, optimize commands with JSON output
+- **MCP Server**: 8 tools for AI assistant integration (Claude Desktop, Cline)
 
 ### Available CLI Commands
 
@@ -85,6 +88,9 @@ node dist/bin.cjs explain "(hello|world)+"
 
 # Test patterns against corpora
 node dist/bin.cjs test "[a-z]+" test-cases.json
+
+# Optimize standard library patterns
+node dist/bin.cjs optimize quotedString
 ```
 
 ### Standard Library Patterns
@@ -97,7 +103,7 @@ See [AGENTS.md](./AGENTS.md) for detailed development commands and guidelines.
 
 ## MCP Server Integration
 
-effect-regex includes a Model Context Protocol (MCP) server that exposes 7 powerful regex tools to AI assistants like Claude Desktop and Cline.
+effect-regex includes a Model Context Protocol (MCP) server that exposes 8 powerful regex tools to AI assistants like Claude Desktop and Cline.
 
 ### Quick Setup
 
@@ -126,9 +132,39 @@ pnpm build:mcp
 4. **convert_regex** - Convert between dialects (JS, RE2, PCRE)
 5. **explain_regex** - Generate human-readable explanations
 6. **library_list** - List standard library patterns with filtering
-7. **propose_pattern** - AI-assisted pattern generation from examples
+7. **propose_pattern** - AI-assisted pattern generation from examples (with optional Anthropic Claude API integration)
+8. **optimize_pattern** - Optimize patterns using AST transformation passes (constant folding, quantifier simplification, character class merging, alternation deduplication)
 
-See **[docs/mcp-setup.md](./docs/mcp-setup.md)** for complete setup instructions, usage examples, and troubleshooting.
+### AI-Powered Pattern Generation
+
+The `propose_pattern` tool can optionally use Anthropic's Claude API for intelligent pattern generation:
+
+- **With API key**: High-quality patterns with context understanding (confidence 0.85+)
+- **Without API key**: Heuristic-based pattern generation (confidence 0.7)
+- **Automatic fallback**: Gracefully degrades if LLM unavailable
+- **Cost-effective**: ~$0.003-0.015 per pattern generation
+
+To enable LLM integration, set `ANTHROPIC_API_KEY` in your MCP configuration. See **[docs/mcp-setup.md](./docs/mcp-setup.md)** for complete setup instructions, usage examples, and troubleshooting.
+
+## Claude Skill
+
+effect-regex is available as a **Claude Skill** for use with Claude Code and Claude.ai! The skill provides expert regex assistance through natural language:
+
+```bash
+# Project skill (already installed)
+.claude/skills/effect-regex/
+
+# Install globally for all projects
+cp -r .claude/skills/effect-regex ~/.claude/skills/
+```
+
+Ask Claude questions like:
+- "Create a regex to match email addresses"
+- "Test this pattern against some examples"
+- "Optimize the quotedString pattern"
+- "Explain what this regex does"
+
+See **[.claude/skills/effect-regex/README.md](./.claude/skills/effect-regex/README.md)** for complete skill documentation.
 
 ## Coding Guidelines
 
