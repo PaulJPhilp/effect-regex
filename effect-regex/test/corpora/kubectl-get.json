@@ -1,0 +1,90 @@
+{
+  "pattern": "^kubectl\\s+get(?:\\s+(-n|--namespace)\\s+(?<namespace>[^\\s]+))?(?:\\s+(-o|--output)=(?<output>[^\\s]+))?(?:\\s+(?<resource>[^\\s]+))(?:\\s+(?<name>[^\\s]+))?\\s*$",
+  "dialect": "js",
+  "testCases": [
+    {
+      "input": "kubectl get pods",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "get",
+        "pos_resource": "pods"
+      }
+    },
+    {
+      "input": "kubectl get svc",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "get",
+        "pos_resource": "svc"
+      }
+    },
+    {
+      "input": "kubectl get pods my-pod",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "get",
+        "pos_resource": "pods",
+        "pos_name": "my-pod"
+      }
+    },
+    {
+      "input": "kubectl get -n kube-system pods",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "get",
+        "opt_namespace_value": "kube-system",
+        "pos_resource": "pods"
+      }
+    },
+    {
+      "input": "kubectl get --namespace=default services",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "get",
+        "opt_namespace_value": "default",
+        "pos_resource": "services"
+      }
+    },
+    {
+      "input": "kubectl get -o wide pods",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "get",
+        "opt_output_value": "wide",
+        "pos_resource": "pods"
+      }
+    },
+    {
+      "input": "kubectl get --output=json pods my-pod",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "get",
+        "opt_output_value": "json",
+        "pos_resource": "pods",
+        "pos_name": "my-pod"
+      }
+    },
+    {
+      "input": "kubectl get -n kube-system -o yaml svc",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "get",
+        "opt_namespace_value": "kube-system",
+        "opt_output_value": "yaml",
+        "pos_resource": "svc"
+      }
+    },
+    {
+      "input": "kubectl get",
+      "shouldMatch": false
+    },
+    {
+      "input": "kubectl apply -f deployment.yaml",
+      "shouldMatch": false
+    },
+    {
+      "input": "kubectl describe pods",
+      "shouldMatch": false
+    }
+  ]
+}

@@ -32,3 +32,13 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# Rulebook-ai generated artifacts (can be regenerated with 'rulebook-ai project sync')
+.rulebook-ai/
+.cursor/
+.windsurf/
+.clinerules/
+.roo/
+.kilocode/
+.gemini/
+WARP.md

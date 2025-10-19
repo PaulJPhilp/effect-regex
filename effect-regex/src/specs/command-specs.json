@@ -1,0 +1,229 @@
+{
+  "$schema": "./schemas/command-spec.schema.json",
+  "commandSpecs": {
+    "git-commit": {
+      "name": "git",
+      "subcommands": ["commit"],
+      "flags": [
+        {
+          "name": "all",
+          "short": "a",
+          "takesValue": false,
+          "repeatable": false
+        },
+        {
+          "name": "amend",
+          "takesValue": false,
+          "repeatable": false
+        }
+      ],
+      "options": [
+        {
+          "key": "message",
+          "short": "m",
+          "valuePattern": "quotedString",
+          "required": false,
+          "repeatable": false,
+          "separator": "="
+        }
+      ],
+      "positionals": [
+        {
+          "name": "path",
+          "pattern": "pathSegment",
+          "optional": true,
+          "repeatable": true
+        }
+      ],
+      "allowInterleaving": true,
+      "goldenPattern": "^git\\s+commit(?:\\s+(-a|--all))?(?:\\s+(--amend))?(?:\\s+(-m|--message)=(?<message_quoted>[^\\s\"]+|\"[^\"]*\"))(?:\\s+(?<path>[^\\s]+))*\\s*$",
+      "captureMap": {
+        "subcommand": 1,
+        "flag_all": 2,
+        "flag_amend": 3,
+        "opt_message_value": "message_quoted",
+        "pos_path": "path"
+      },
+      "notes": [
+        "Supports both -m and --message with quoted or unquoted values",
+        "Paths are optional and can be repeated",
+        "Interleaving of flags and options is allowed"
+      ],
+      "testCorpora": {
+        "positive": [
+          "git commit -m \"Initial commit\"",
+          "git commit --message=feat: add new feature",
+          "git commit -a -m \"fix: resolve issue\"",
+          "git commit --amend --message=\"chore: update docs\"",
+          "git commit -a --amend -m fix src/main.ts",
+          "git commit --message=\"feat: add tests\" test.ts utils.ts"
+        ],
+        "negative": [
+          "git commit",
+          "git commit -m",
+          "git status",
+          "git add ."
+        ]
+      }
+    },
+
+    "docker-run": {
+      "name": "docker",
+      "subcommands": ["run"],
+      "flags": [
+        {
+          "name": "interactive",
+          "short": "i",
+          "takesValue": false,
+          "repeatable": false
+        },
+        {
+          "name": "tty",
+          "short": "t",
+          "takesValue": false,
+          "repeatable": false
+        },
+        {
+          "name": "rm",
+          "takesValue": false,
+          "repeatable": false
+        }
+      ],
+      "options": [
+        {
+          "key": "publish",
+          "short": "p",
+          "valuePattern": "keyValue",
+          "required": false,
+          "repeatable": true,
+          "separator": " "
+        },
+        {
+          "key": "volume",
+          "short": "v",
+          "valuePattern": "keyValue",
+          "required": false,
+          "repeatable": true,
+          "separator": " "
+        }
+      ],
+      "positionals": [
+        {
+          "name": "image",
+          "pattern": "pathSegment",
+          "optional": false,
+          "repeatable": false
+        },
+        {
+          "name": "command",
+          "pattern": "quotedString",
+          "optional": true,
+          "repeatable": true
+        }
+      ],
+      "allowInterleaving": true,
+      "goldenPattern": "^docker\\s+run(?:\\s+(-i|--interactive))?(?:\\s+(-t|--tty))?(?:\\s+(--rm))?(?:\\s+(-p|--publish)\\s+(?<publish_kv>[^\\s]+:[^\\s]+))*(?:\\s+(-v|--volume)\\s+(?<volume_kv>[^\\s]+:[^\\s]+))*(?:\\s+(?<image>[^\\s]+))(?:\\s+(?<command_quoted>[^\\s\"]+|\"[^\"]*\"|[^\\s]+))*\\s*$",
+      "captureMap": {
+        "subcommand": 1,
+        "flag_interactive": 2,
+        "flag_tty": 3,
+        "flag_rm": 4,
+        "opt_publish_value": "publish_kv",
+        "opt_volume_value": "volume_kv",
+        "pos_image": "image",
+        "pos_command": "command_quoted"
+      },
+      "notes": [
+        "Common -it flag combination supported",
+        "Port and volume mappings use key:value format",
+        "Image name is required, additional args are optional"
+      ],
+      "testCorpora": {
+        "positive": [
+          "docker run ubuntu",
+          "docker run -it ubuntu bash",
+          "docker run --rm alpine echo hello",
+          "docker run -p 8080:80 nginx",
+          "docker run -v /host:/container ubuntu",
+          "docker run -it --rm -p 3000:3000 -v /app:/app node:18 npm start",
+          "docker run ubuntu ls -la"
+        ],
+        "negative": [
+          "docker run",
+          "docker pull ubuntu",
+          "docker ps"
+        ]
+      }
+    },
+
+    "kubectl-get": {
+      "name": "kubectl",
+      "subcommands": ["get"],
+      "options": [
+        {
+          "key": "namespace",
+          "short": "n",
+          "valuePattern": "pathSegment",
+          "required": false,
+          "repeatable": false,
+          "separator": " "
+        },
+        {
+          "key": "output",
+          "short": "o",
+          "valuePattern": "pathSegment",
+          "required": false,
+          "repeatable": false,
+          "separator": "="
+        }
+      ],
+      "positionals": [
+        {
+          "name": "resource",
+          "pattern": "pathSegment",
+          "optional": false,
+          "repeatable": false
+        },
+        {
+          "name": "name",
+          "pattern": "pathSegment",
+          "optional": true,
+          "repeatable": false
+        }
+      ],
+      "allowInterleaving": true,
+      "goldenPattern": "^kubectl\\s+get(?:\\s+(-n|--namespace)\\s+(?<namespace>[^\\s]+))?(?:\\s+(-o|--output)=(?<output>[^\\s]+))?(?:\\s+(?<resource>[^\\s]+))(?:\\s+(?<name>[^\\s]+))?\\s*$",
+      "captureMap": {
+        "subcommand": 1,
+        "opt_namespace_value": "namespace",
+        "opt_output_value": "output",
+        "pos_resource": "resource",
+        "pos_name": "name"
+      },
+      "notes": [
+        "Resource type is required (pods, services, etc.)",
+        "Specific resource name is optional",
+        "Namespace and output format are common options"
+      ],
+      "testCorpora": {
+        "positive": [
+          "kubectl get pods",
+          "kubectl get svc",
+          "kubectl get pods my-pod",
+          "kubectl get -n kube-system pods",
+          "kubectl get --namespace=default services",
+          "kubectl get -o wide pods",
+          "kubectl get --output=json pods my-pod",
+          "kubectl get -n kube-system -o yaml svc"
+        ],
+        "negative": [
+          "kubectl get",
+          "kubectl apply -f deployment.yaml",
+          "kubectl describe pods"
+        ]
+      }
+    }
+  }
+}</content>
+</xai:function_call: mx: create_file>
+<parameter name="path">/Users/paul/Projects/effect-regex/effect-regex/.github/workflows/ci.yml

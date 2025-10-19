@@ -1,0 +1,481 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MCP Tools Schemas",
+  "description": "JSON schemas for all MCP server tools in effect-regex",
+  "definitions": {
+
+    "build_regex": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "function",
+          "description": "Tool type"
+        },
+        "function": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "const": "build_regex",
+              "description": "Build a regex pattern from AST or standard library"
+            },
+            "description": {
+              "type": "string",
+              "description": "Build a deterministic regex pattern with optional linting and explanation"
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "input": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": { "const": "ast" },
+                        "ast": {
+                          "type": "object",
+                          "description": "Fluent builder AST",
+                          "properties": {
+                            "type": { "enum": ["lit", "raw", "seq", "alt", "cls", "group", "noncap", "q", "anchor"] },
+                            "value": { "type": ["string", "number", "boolean", "array", "object"] }
+                          }
+                        }
+                      },
+                      "required": ["type", "ast"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": { "const": "std" },
+                        "name": {
+                          "enum": ["uuidV4", "semverStrict", "ipv4", "ipv6Compressed", "quotedString", "keyValue", "csvList", "pathSegment", "filePathBasic", "integer", "float", "isoDate", "isoDateTime"]
+                        }
+                      },
+                      "required": ["type", "name"]
+                    }
+                  ]
+                },
+                "dialect": {
+                  "enum": ["js", "re2", "pcre"],
+                  "default": "js",
+                  "description": "Target regex dialect"
+                },
+                "anchor": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Add start/end anchors (^$)"
+                },
+                "lint": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Run linting on output pattern"
+                }
+              },
+              "required": ["input"]
+            }
+          },
+          "required": ["name", "description", "parameters"]
+        }
+      },
+      "required": ["type", "function"]
+    },
+
+    "build_command": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "function"
+        },
+        "function": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "const": "build_command"
+            },
+            "description": {
+              "type": "string",
+              "description": "Build a regex pattern from CommandSpec with semantic capture map"
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "spec": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "subcommands": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "flags": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": { "type": "string" },
+                          "short": { "type": "string" },
+                          "takesValue": { "type": "boolean", "default": false },
+                          "valuePattern": { "type": "string" },
+                          "repeatable": { "type": "boolean", "default": false }
+                        },
+                        "required": ["name"]
+                      }
+                    },
+                    "options": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": { "type": "string" },
+                          "short": { "type": "string" },
+                          "valuePattern": { "type": "string" },
+                          "required": { "type": "boolean", "default": false },
+                          "repeatable": { "type": "boolean", "default": false },
+                          "separator": { "enum": ["=", " "], "default": "=" }
+                        },
+                        "required": ["key", "valuePattern"]
+                      }
+                    },
+                    "positionals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": { "type": "string" },
+                          "pattern": { "type": "string" },
+                          "optional": { "type": "boolean", "default": false },
+                          "repeatable": { "type": "boolean", "default": false }
+                        },
+                        "required": ["name"]
+                      }
+                    },
+                    "allowInterleaving": { "type": "boolean", "default": true }
+                  },
+                  "required": ["name"]
+                },
+                "dialect": {
+                  "enum": ["js", "re2", "pcre"],
+                  "default": "js"
+                }
+              },
+              "required": ["spec"]
+            }
+          },
+          "required": ["name", "description", "parameters"]
+        }
+      },
+      "required": ["type", "function"]
+    },
+
+    "test_regex": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "function"
+        },
+        "function": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "const": "test_regex"
+            },
+            "description": {
+              "type": "string",
+              "description": "Test a regex pattern against test cases with timeouts"
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "pattern": { "type": "string" },
+                "dialect": {
+                  "enum": ["js", "re2-sim", "re2"],
+                  "default": "js"
+                },
+                "cases": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "input": { "type": "string" },
+                      "shouldMatch": { "type": "boolean", "default": true },
+                      "expectedCaptures": {
+                        "type": "object",
+                        "patternProperties": {
+                          ".*": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }] }
+                        }
+                      }
+                    },
+                    "required": ["input"]
+                  },
+                  "minItems": 1,
+                  "maxItems": 100
+                },
+                "timeoutMs": {
+                  "type": "integer",
+                  "minimum": 10,
+                  "maximum": 5000,
+                  "default": 100
+                }
+              },
+              "required": ["pattern", "cases"]
+            }
+          },
+          "required": ["name", "description", "parameters"]
+        }
+      },
+      "required": ["type", "function"]
+    },
+
+    "lint_regex": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "function"
+        },
+        "function": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "const": "lint_regex"
+            },
+            "description": {
+              "type": "string",
+              "description": "Lint a regex pattern for safety, performance, and dialect compatibility"
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "pattern": { "type": "string" },
+                "dialect": {
+                  "enum": ["js", "re2", "pcre"],
+                  "default": "js"
+                },
+                "strict": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Treat warnings as errors"
+                }
+              },
+              "required": ["pattern"]
+            }
+          },
+          "required": ["name", "description", "parameters"]
+        }
+      },
+      "required": ["type", "function"]
+    },
+
+    "convert_regex": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "function"
+        },
+        "function": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "const": "convert_regex"
+            },
+            "description": {
+              "type": "string",
+              "description": "Convert a regex pattern between dialects with best-effort compatibility"
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "pattern": { "type": "string" },
+                "fromDialect": {
+                  "enum": ["js", "re2", "pcre"],
+                  "default": "js"
+                },
+                "toDialect": {
+                  "enum": ["js", "re2", "pcre"]
+                },
+                "allowDowngrades": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Allow lossy conversions with notes"
+                }
+              },
+              "required": ["pattern", "toDialect"]
+            }
+          },
+          "required": ["name", "description", "parameters"]
+        }
+      },
+      "required": ["type", "function"]
+    },
+
+    "explain_regex": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "function"
+        },
+        "function": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "const": "explain_regex"
+            },
+            "description": {
+              "type": "string",
+              "description": "Generate a human-readable explanation of a regex pattern structure"
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "pattern": { "type": "string" },
+                "format": {
+                  "enum": ["tree", "steps", "summary"],
+                  "default": "tree"
+                },
+                "dialect": {
+                  "enum": ["js", "re2", "pcre"],
+                  "default": "js"
+                }
+              },
+              "required": ["pattern"]
+            }
+          },
+          "required": ["name", "description", "parameters"]
+        }
+      },
+      "required": ["type", "function"]
+    },
+
+    "library_save": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "function"
+        },
+        "function": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "const": "library_save"
+            },
+            "description": {
+              "type": "string",
+              "description": "Save a pattern to the local library"
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+                  "minLength": 1,
+                  "maxLength": 50
+                },
+                "pattern": { "type": "string" },
+                "dialect": {
+                  "enum": ["js", "re2", "pcre"],
+                  "default": "js"
+                },
+                "description": { "type": "string", "maxLength": 500 },
+                "tags": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "maxItems": 10
+                }
+              },
+              "required": ["name", "pattern"]
+            }
+          },
+          "required": ["name", "description", "parameters"]
+        }
+      },
+      "required": ["type", "function"]
+    },
+
+    "library_load": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "function"
+        },
+        "function": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "const": "library_load"
+            },
+            "description": {
+              "type": "string",
+              "description": "Load a pattern from the local library"
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" }
+              },
+              "required": ["name"]
+            }
+          },
+          "required": ["name", "description", "parameters"]
+        }
+      },
+      "required": ["type", "function"]
+    },
+
+    "library_list": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "function"
+        },
+        "function": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "const": "library_list"
+            },
+            "description": {
+              "type": "string",
+              "description": "List all patterns in the local library"
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "filter": {
+                  "type": "object",
+                  "properties": {
+                    "tag": { "type": "string" },
+                    "dialect": { "enum": ["js", "re2", "pcre"] },
+                    "search": { "type": "string", "maxLength": 100 }
+                  }
+                }
+              }
+            }
+          },
+          "required": ["name", "description", "parameters"]
+        }
+      },
+      "required": ["type", "function"]
+    }
+  },
+
+  "type": "object",
+  "properties": {
+    "tools": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/build_regex" },
+          { "$ref": "#/definitions/build_command" },
+          { "$ref": "#/definitions/test_regex" },
+          { "$ref": "#/definitions/lint_regex" },
+          { "$ref": "#/definitions/convert_regex" },
+          { "$ref": "#/definitions/explain_regex" },
+          { "$ref": "#/definitions/library_save" },
+          { "$ref": "#/definitions/library_load" },
+          { "$ref": "#/definitions/library_list" }
+        ]
+      }
+    }
+  }
+}</content>
+</xai:function_call: mx: create_file>
+<parameter name="path">/Users/paul/Projects/effect-regex/effect-regex/src/specs/command-specs.json

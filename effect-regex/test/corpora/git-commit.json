@@ -1,0 +1,72 @@
+{
+  "pattern": "^git\\s+commit(?:\\s+(-a|--all))?(?:\\s+(--amend))?(?:\\s+(-m|--message)=(?<message_quoted>[^\\s\"]+|\"[^\"]*\"))(?:\\s+(?<path>[^\\s]+))*\\s*$",
+  "dialect": "js",
+  "testCases": [
+    {
+      "input": "git commit -m \"Initial commit\"",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "commit",
+        "opt_message_value": "\"Initial commit\""
+      }
+    },
+    {
+      "input": "git commit --message=feat: add new feature",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "commit",
+        "opt_message_value": "feat: add new feature"
+      }
+    },
+    {
+      "input": "git commit -a -m \"fix: resolve issue\"",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "commit",
+        "flag_all": "-a",
+        "opt_message_value": "\"fix: resolve issue\""
+      }
+    },
+    {
+      "input": "git commit --amend --message=\"chore: update docs\"",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "commit",
+        "flag_amend": "--amend",
+        "opt_message_value": "\"chore: update docs\""
+      }
+    },
+    {
+      "input": "git commit -a --amend -m fix src/main.ts",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "commit",
+        "flag_all": "-a",
+        "flag_amend": "--amend",
+        "opt_message_value": "fix",
+        "pos_path": ["src/main.ts"]
+      }
+    },
+    {
+      "input": "git commit --message=\"feat: add tests\" test.ts utils.ts",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "commit",
+        "opt_message_value": "\"feat: add tests\"",
+        "pos_path": ["test.ts", "utils.ts"]
+      }
+    },
+    {
+      "input": "git commit",
+      "shouldMatch": false
+    },
+    {
+      "input": "git commit -m",
+      "shouldMatch": false
+    },
+    {
+      "input": "git status",
+      "shouldMatch": false
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "pattern": "^docker\\s+run(?:\\s+(-i|--interactive))?(?:\\s+(-t|--tty))?(?:\\s+(--rm))?(?:\\s+(-p|--publish)\\s+(?<publish_kv>[^\\s]+:[^\\s]+))*(?:\\s+(-v|--volume)\\s+(?<volume_kv>[^\\s]+:[^\\s]+))*(?:\\s+(?<image>[^\\s]+))(?:\\s+(?<command_quoted>[^\\s\"]+|\"[^\"]*\"|[^\\s]+))*\\s*$",
+  "dialect": "js",
+  "testCases": [
+    {
+      "input": "docker run ubuntu",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "run",
+        "pos_image": "ubuntu"
+      }
+    },
+    {
+      "input": "docker run -it ubuntu bash",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "run",
+        "flag_interactive": "-i",
+        "flag_tty": "-t",
+        "pos_image": "ubuntu",
+        "pos_command": ["bash"]
+      }
+    },
+    {
+      "input": "docker run --rm alpine echo hello",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "run",
+        "flag_rm": "--rm",
+        "pos_image": "alpine",
+        "pos_command": ["echo", "hello"]
+      }
+    },
+    {
+      "input": "docker run -p 8080:80 nginx",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "run",
+        "opt_publish_value": "8080:80",
+        "pos_image": "nginx"
+      }
+    },
+    {
+      "input": "docker run -v /host:/container ubuntu",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "run",
+        "opt_volume_value": "/host:/container",
+        "pos_image": "ubuntu"
+      }
+    },
+    {
+      "input": "docker run -it --rm -p 3000:3000 -v /app:/app node:18 npm start",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "run",
+        "flag_interactive": "-i",
+        "flag_tty": "-t",
+        "flag_rm": "--rm",
+        "opt_publish_value": "3000:3000",
+        "opt_volume_value": "/app:/app",
+        "pos_image": "node:18",
+        "pos_command": ["npm", "start"]
+      }
+    },
+    {
+      "input": "docker run ubuntu ls -la",
+      "shouldMatch": true,
+      "expectedCaptures": {
+        "subcommand": "run",
+        "pos_image": "ubuntu",
+        "pos_command": ["ls", "-la"]
+      }
+    },
+    {
+      "input": "docker run",
+      "shouldMatch": false
+    },
+    {
+      "input": "docker pull ubuntu",
+      "shouldMatch": false
+    }
+  ]
+}

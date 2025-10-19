@@ -21,5 +21,9 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
     "strictNullChecks": true
-  }
+  },
+  "exclude": [
+    "effect-patterns-repo/**",
+    "node_modules"
+  ]
 }

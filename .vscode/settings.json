@@ -1,0 +1,22 @@
+{
+    "vitest.disableWorkspaceWarning": true,
+    "markdownlint.config": {
+        "MD022": false,
+        "MD031": false,
+        "MD040": false
+    },
+    "markdownlint.ignore": [
+        "**/*.md"
+    ],
+    "typescript.preferences.includePackageJsonAutoImports": "off",
+    "typescript.disableAutomaticTypeAcquisition": true,
+    "files.exclude": {
+        "**/effect-patterns-repo": true
+    },
+    "search.exclude": {
+        "**/effect-patterns-repo": true
+    },
+    "typescript.exclude": [
+        "**/effect-patterns-repo/**"
+    ]
+}
