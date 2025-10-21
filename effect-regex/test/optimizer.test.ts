@@ -3,11 +3,11 @@
  * Tests for pattern optimization engine
  */
 
-import { describe, it, expect } from "@effect/vitest";
+import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { optimize, optimizeWithPass } from "../src/core/optimizer.js";
-import { RegexBuilder, emit } from "../src/core/builder.js";
 import type { Ast as RegexAST } from "../src/core/ast.js";
+import { emit, RegexBuilder } from "../src/core/builder.js";
+import { optimize, optimizeWithPass } from "../src/core/optimizer.js";
 
 describe("Optimizer - Constant Folding", () => {
   it("should merge adjacent literals in a sequence", () => {
@@ -121,7 +121,7 @@ describe("Optimizer - Quantifier Simplification", () => {
 
     expect(optimized.type).toBe("q");
     if (optimized.type === "q") {
-      expect(optimized.min).toBe(8);  // 2 * 4
+      expect(optimized.min).toBe(8); // 2 * 4
       expect(optimized.max).toBe(15); // 3 * 5
       expect(optimized.child.type).toBe("cls");
     }
@@ -285,7 +285,7 @@ describe("Optimizer - Alternation Deduplication", () => {
       expect(optimized.children.length).toBe(2);
 
       // Check both alternatives are present (order may vary due to sorting)
-      const values = optimized.children.map(c =>
+      const values = optimized.children.map((c) =>
         c.type === "lit" ? c.value : ""
       );
       expect(values).toContain("test");
@@ -329,13 +329,13 @@ describe("Optimizer - Alternation Deduplication", () => {
 });
 
 describe("Optimizer - Full Optimization", () => {
-  it("should apply all passes and report results", async () => {
+  it("should apply all passes and report results", () => {
     const pattern = RegexBuilder.lit("hello")
       .then(RegexBuilder.lit(" "))
       .then(RegexBuilder.lit("world"));
 
     const ast = pattern.getAst();
-    const result = await Effect.runPromise(optimize(ast));
+    const result = optimize(ast);
 
     expect(result.optimized.type).toBe("lit");
     expect(result.passesApplied).toContain("constantFolding");
@@ -343,7 +343,7 @@ describe("Optimizer - Full Optimization", () => {
     expect(result.afterSize).toBeLessThan(result.beforeSize);
   });
 
-  it("should reach fixed point with multiple passes", async () => {
+  it("should reach fixed point with multiple passes", () => {
     // Create a pattern that benefits from multiple passes
     const pattern = RegexBuilder.alt(
       RegexBuilder.lit("a").then(RegexBuilder.lit("b")),
@@ -353,7 +353,7 @@ describe("Optimizer - Full Optimization", () => {
     );
 
     const ast = pattern.getAst();
-    const result = await Effect.runPromise(optimize(ast));
+    const result = optimize(ast);
 
     expect(result.passesApplied.length).toBeGreaterThan(0);
     expect(result.nodesReduced).toBeGreaterThan(0);
@@ -364,7 +364,7 @@ describe("Optimizer - Full Optimization", () => {
     expect(result.passesApplied).toContain("characterClassMerging");
   });
 
-  it("should respect optimization options", async () => {
+  it("should respect optimization options", () => {
     const pattern = RegexBuilder.lit("hello")
       .then(RegexBuilder.lit(" "))
       .then(RegexBuilder.lit("world"));
@@ -372,31 +372,29 @@ describe("Optimizer - Full Optimization", () => {
     const ast = pattern.getAst();
 
     // Disable constant folding
-    const result = await Effect.runPromise(
-      optimize(ast, { constantFolding: false })
-    );
+    const result = optimize(ast, { constantFolding: false });
 
     expect(result.passesApplied).not.toContain("constantFolding");
     expect(result.optimized.type).toBe("seq"); // Should remain as sequence
   });
 
-  it("should not reduce already optimal patterns", async () => {
+  it("should not reduce already optimal patterns", () => {
     const pattern = RegexBuilder.lit("test");
 
     const ast = pattern.getAst();
-    const result = await Effect.runPromise(optimize(ast));
+    const result = optimize(ast);
 
     expect(result.nodesReduced).toBe(0);
     expect(result.beforeSize).toBe(result.afterSize);
   });
 
-  it("should preserve pattern semantics after optimization", async () => {
+  it("should preserve pattern semantics after optimization", () => {
     const original = RegexBuilder.lit("hello")
       .then(RegexBuilder.lit(" "))
       .then(RegexBuilder.lit("world"));
 
     const ast = original.getAst();
-    const result = await Effect.runPromise(optimize(ast));
+    const result = optimize(ast);
 
     // Emit both and compare
     const originalEmitted = emit(original);
@@ -407,7 +405,7 @@ describe("Optimizer - Full Optimization", () => {
     expect(optimizedEmitted.pattern).toBe(originalEmitted.pattern);
   });
 
-  it("should handle complex nested patterns", async () => {
+  it("should handle complex nested patterns", () => {
     const pattern = RegexBuilder.alt(
       RegexBuilder.lit("a").then(RegexBuilder.lit("b")).oneOrMore().oneOrMore(),
       RegexBuilder.charClass("0-9"),
@@ -416,13 +414,13 @@ describe("Optimizer - Full Optimization", () => {
     );
 
     const ast = pattern.getAst();
-    const result = await Effect.runPromise(optimize(ast));
+    const result = optimize(ast);
 
     expect(result.nodesReduced).toBeGreaterThan(0);
     expect(result.passesApplied.length).toBeGreaterThan(1);
   });
 
-  it("should report meaningful metrics", async () => {
+  it("should report meaningful metrics", () => {
     const pattern = RegexBuilder.lit("a")
       .then(RegexBuilder.lit("b"))
       .then(RegexBuilder.lit("c"))
@@ -430,7 +428,7 @@ describe("Optimizer - Full Optimization", () => {
       .then(RegexBuilder.lit("e"));
 
     const ast = pattern.getAst();
-    const result = await Effect.runPromise(optimize(ast));
+    const result = optimize(ast);
 
     expect(result.beforeSize).toBeGreaterThan(result.afterSize);
     expect(result.nodesReduced).toBe(result.beforeSize - result.afterSize);

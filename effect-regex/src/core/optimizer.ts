@@ -8,7 +8,6 @@
  * 4. Alternation Deduplication - Remove duplicate alternatives
  */
 
-import { Effect } from "effect";
 import type { Ast as RegexAST } from "./ast.js";
 
 /**
@@ -26,11 +25,11 @@ export interface OptimizationResult {
  * Optimization configuration
  */
 export interface OptimizationOptions {
-  readonly constantFolding?: boolean;      // Default: true
+  readonly constantFolding?: boolean; // Default: true
   readonly quantifierSimplification?: boolean; // Default: true
   readonly characterClassMerging?: boolean; // Default: true
-  readonly alternationDedup?: boolean;     // Default: true
-  readonly maxPasses?: number;             // Default: 5
+  readonly alternationDedup?: boolean; // Default: true
+  readonly maxPasses?: number; // Default: 5
 }
 
 const DEFAULT_OPTIONS: Required<OptimizationOptions> = {
@@ -54,7 +53,9 @@ function countNodes(ast: RegexAST): number {
 
     case "seq":
     case "alt":
-      return 1 + ast.children.reduce((sum, child) => sum + countNodes(child), 0);
+      return (
+        1 + ast.children.reduce((sum, child) => sum + countNodes(child), 0)
+      );
 
     case "group":
     case "noncap":
@@ -112,13 +113,23 @@ function constantFolding(ast: RegexAST): RegexAST {
       return { type: "alt", children: ast.children.map(constantFolding) };
 
     case "group":
-      return { type: "group", name: ast.name, child: constantFolding(ast.child) };
+      return {
+        type: "group",
+        name: ast.name,
+        child: constantFolding(ast.child),
+      };
 
     case "noncap":
       return { type: "noncap", child: constantFolding(ast.child) };
 
     case "q":
-      return { type: "q", child: constantFolding(ast.child), min: ast.min, max: ast.max, lazy: ast.lazy };
+      return {
+        type: "q",
+        child: constantFolding(ast.child),
+        min: ast.min,
+        max: ast.max,
+        lazy: ast.lazy,
+      };
 
     default:
       return ast;
@@ -163,17 +174,33 @@ function quantifierSimplification(ast: RegexAST): RegexAST {
         return optimizedChild;
       }
 
-      return { type: "q", child: optimizedChild, min: ast.min, max: ast.max, lazy: ast.lazy };
+      return {
+        type: "q",
+        child: optimizedChild,
+        min: ast.min,
+        max: ast.max,
+        lazy: ast.lazy,
+      };
     }
 
     case "seq":
-      return { type: "seq", children: ast.children.map(quantifierSimplification) };
+      return {
+        type: "seq",
+        children: ast.children.map(quantifierSimplification),
+      };
 
     case "alt":
-      return { type: "alt", children: ast.children.map(quantifierSimplification) };
+      return {
+        type: "alt",
+        children: ast.children.map(quantifierSimplification),
+      };
 
     case "group":
-      return { type: "group", name: ast.name, child: quantifierSimplification(ast.child) };
+      return {
+        type: "group",
+        name: ast.name,
+        child: quantifierSimplification(ast.child),
+      };
 
     case "noncap":
       return { type: "noncap", child: quantifierSimplification(ast.child) };
@@ -209,7 +236,11 @@ function characterClassMerging(ast: RegexAST): RegexAST {
       // If we have 2+ character classes, merge them
       if (charClasses.length >= 2) {
         const mergedChars = charClasses.join("");
-        const merged: RegexAST = { type: "cls", chars: mergedChars, negated: false };
+        const merged: RegexAST = {
+          type: "cls",
+          chars: mergedChars,
+          negated: false,
+        };
 
         const newChildren = [merged, ...nonCharClasses];
 
@@ -227,13 +258,23 @@ function characterClassMerging(ast: RegexAST): RegexAST {
       return { type: "seq", children: ast.children.map(characterClassMerging) };
 
     case "group":
-      return { type: "group", name: ast.name, child: characterClassMerging(ast.child) };
+      return {
+        type: "group",
+        name: ast.name,
+        child: characterClassMerging(ast.child),
+      };
 
     case "noncap":
       return { type: "noncap", child: characterClassMerging(ast.child) };
 
     case "q":
-      return { type: "q", child: characterClassMerging(ast.child), min: ast.min, max: ast.max, lazy: ast.lazy };
+      return {
+        type: "q",
+        child: characterClassMerging(ast.child),
+        min: ast.min,
+        max: ast.max,
+        lazy: ast.lazy,
+      };
 
     default:
       return ast;
@@ -273,16 +314,29 @@ function alternationDeduplication(ast: RegexAST): RegexAST {
     }
 
     case "seq":
-      return { type: "seq", children: ast.children.map(alternationDeduplication) };
+      return {
+        type: "seq",
+        children: ast.children.map(alternationDeduplication),
+      };
 
     case "group":
-      return { type: "group", name: ast.name, child: alternationDeduplication(ast.child) };
+      return {
+        type: "group",
+        name: ast.name,
+        child: alternationDeduplication(ast.child),
+      };
 
     case "noncap":
       return { type: "noncap", child: alternationDeduplication(ast.child) };
 
     case "q":
-      return { type: "q", child: alternationDeduplication(ast.child), min: ast.min, max: ast.max, lazy: ast.lazy };
+      return {
+        type: "q",
+        child: alternationDeduplication(ast.child),
+        min: ast.min,
+        max: ast.max,
+        lazy: ast.lazy,
+      };
 
     default:
       return ast;
@@ -320,57 +374,55 @@ function astEquals(a: RegexAST, b: RegexAST): boolean {
 export function optimize(
   ast: RegexAST,
   options: OptimizationOptions = {}
-): Effect.Effect<OptimizationResult, never, never> {
-  return Effect.gen(function* () {
-    const opts = { ...DEFAULT_OPTIONS, ...options };
-    const passesApplied: string[] = [];
-    const beforeSize = countNodes(ast);
+): OptimizationResult {
+  const opts = { ...DEFAULT_OPTIONS, ...options };
+  const passesApplied: string[] = [];
+  const beforeSize = countNodes(ast);
 
-    let current = ast;
-    let iteration = 0;
+  let current = ast;
+  let iteration = 0;
 
-    // Determine which passes to apply
-    const passes: string[] = [];
-    if (opts.constantFolding) passes.push("constantFolding");
-    if (opts.quantifierSimplification) passes.push("quantifierSimplification");
-    if (opts.characterClassMerging) passes.push("characterClassMerging");
-    if (opts.alternationDedup) passes.push("alternationDedup");
+  // Determine which passes to apply
+  const passes: string[] = [];
+  if (opts.constantFolding) passes.push("constantFolding");
+  if (opts.quantifierSimplification) passes.push("quantifierSimplification");
+  if (opts.characterClassMerging) passes.push("characterClassMerging");
+  if (opts.alternationDedup) passes.push("alternationDedup");
 
-    // Apply passes until fixed point or max iterations
-    while (iteration < opts.maxPasses) {
-      let changed = false;
+  // Apply passes until fixed point or max iterations
+  while (iteration < opts.maxPasses) {
+    let changed = false;
 
-      for (const passName of passes) {
-        const next = applyPass(current, passName);
+    for (const passName of passes) {
+      const next = applyPass(current, passName);
 
-        if (!astEquals(current, next)) {
-          current = next;
-          changed = true;
-          if (!passesApplied.includes(passName)) {
-            passesApplied.push(passName);
-          }
+      if (!astEquals(current, next)) {
+        current = next;
+        changed = true;
+        if (!passesApplied.includes(passName)) {
+          passesApplied.push(passName);
         }
       }
-
-      if (!changed) {
-        // Fixed point reached
-        break;
-      }
-
-      iteration++;
     }
 
-    const afterSize = countNodes(current);
-    const nodesReduced = beforeSize - afterSize;
+    if (!changed) {
+      // Fixed point reached
+      break;
+    }
 
-    return {
-      optimized: current,
-      passesApplied,
-      nodesReduced,
-      beforeSize,
-      afterSize,
-    };
-  });
+    iteration++;
+  }
+
+  const afterSize = countNodes(current);
+  const nodesReduced = beforeSize - afterSize;
+
+  return {
+    optimized: current,
+    passesApplied,
+    nodesReduced,
+    beforeSize,
+    afterSize,
+  };
 }
 
 /**
@@ -378,7 +430,11 @@ export function optimize(
  */
 export function optimizeWithPass(
   ast: RegexAST,
-  passName: "constantFolding" | "quantifierSimplification" | "characterClassMerging" | "alternationDedup"
+  passName:
+    | "constantFolding"
+    | "quantifierSimplification"
+    | "characterClassMerging"
+    | "alternationDedup"
 ): RegexAST {
   return applyPass(ast, passName);
 }

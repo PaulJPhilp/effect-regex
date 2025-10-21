@@ -56,6 +56,100 @@ const parallel = Effect.all([task1, task2, task3]);
 const parallelWithConcurrency = Effect.all(taskList, { concurrency: 3 });
 ```
 
+## When to Use Effect vs Pure Functions
+
+One of the most important decisions in using Effect is knowing when to wrap computations in Effect and when to use pure functions. This section provides clear guidelines based on our experience refactoring the codebase.
+
+### Use Effect When:
+
+1. **Performing I/O Operations**
+   - File system access, network requests, database queries
+   - Example: `testRegex` uses Effect because it runs patterns with timeout protection
+
+2. **Async Operations**
+   - Operations that return Promises
+   - Example: `callLLMWithRetry` wraps API calls in Effect
+
+3. **Managing Resources**
+   - Acquire/release patterns (files, connections, etc.)
+   - Example: MCP server lifecycle management
+
+4. **Handling Errors in Error Channel**
+   - When you want typed errors in the Effect error channel
+   - Example: LLM service propagates `LLMError | LLMConfigError`
+
+5. **Composing with Other Effects**
+   - When building pipelines with other Effect-based operations
+   - Example: `developPattern` composes multiple effectful operations
+
+### Use Pure Functions When:
+
+1. **Deterministic Computations**
+   - Same input always produces same output
+   - No side effects, no I/O
+   - Example: `optimize()` transforms AST to optimized AST
+
+2. **Data Transformations**
+   - Mapping, filtering, reducing data structures
+   - Example: AST optimization passes (constantFolding, etc.)
+
+3. **Pure Validation**
+   - Validation that doesn't require I/O
+   - Example: `lint()` analyzes AST for dialect compatibility
+
+4. **Building Immutable Structures**
+   - Constructing ASTs, building regexes
+   - Example: All AST constructors and `emit()`
+
+### In This Codebase
+
+**Pure Functions** (no Effect wrapper):
+- `optimize(ast, options): OptimizationResult` - Deterministic AST transformation
+- `emit(builder, dialect): RegexPattern` - Deterministic code generation
+- `lint(ast, dialect): LintResult` - Pure static analysis
+- `explain(ast, options): ExplanationNode` - Deterministic explanation generation
+- All AST constructors (`lit`, `seq`, `alt`, etc.)
+
+**Effect-Wrapped Functions**:
+- `testRegex(pattern, dialect, cases, timeout): Effect<TestResult, TestExecutionError>` - Uses timeouts
+- `callLLMWithRetry(prompt, config): Effect<string, LLMError | ...>` - Network I/O
+- `proposePatternWithLLM(...)` - Composes LLM calls with code interpretation
+- `developPattern(...)` - Orchestrates multiple effectful operations
+
+### Anti-Pattern Example
+
+```typescript
+// ❌ BAD: Wrapping pure function in Effect unnecessarily
+export function optimize(ast: RegexAST): Effect<OptimizationResult, never, never> {
+  return Effect.gen(function* () {
+    // All synchronous, deterministic operations
+    const result = performOptimizations(ast);
+    return result;
+  });
+}
+
+// ✅ GOOD: Pure function returns directly
+export function optimize(ast: RegexAST): OptimizationResult {
+  // All synchronous, deterministic operations
+  const result = performOptimizations(ast);
+  return result;
+}
+```
+
+### Migration Pattern
+
+When converting from Effect to pure:
+
+```typescript
+// Before:
+const result = yield* optimize(ast);  // Effect.gen context
+
+// After:
+const result = optimize(ast);  // Direct synchronous call
+```
+
+This keeps the API simpler and avoids unnecessary Effect.runSync/runPromise overhead.
+
 ## Effect Types
 
 ### Service Dependencies
