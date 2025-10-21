@@ -11,6 +11,7 @@ import { ValidationService } from "./types.js";
 import { testRegex as coreTestRegex } from "../core/tester.js";
 import { emit } from "../core/emitter.js";
 import { lint } from "../core/linter.js";
+import { TestExecutionError } from "../errors/index.js";
 
 /**
  * Live implementation of ValidationService
@@ -20,9 +21,11 @@ export const ValidationServiceLive = Layer.succeed(ValidationService, {
     coreTestRegex(pattern, dialect, cases, timeoutMs).pipe(
       Effect.mapError(
         (error) =>
-          new Error(
-            `Test execution failed: ${error instanceof Error ? error.message : String(error)}`
-          )
+          new TestExecutionError({
+            pattern,
+            reason: error instanceof Error ? error.message : String(error),
+            timedOut: error instanceof Error && error.message.includes("timeout"),
+          })
       )
     ),
 

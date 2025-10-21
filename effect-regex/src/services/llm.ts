@@ -17,6 +17,12 @@ import {
 import { interpretRegexBuilderCode } from "../ai/interpreter.js";
 import { generateProposalPrompt, parseRegexBuilderCode } from "../ai/prompts.js";
 import { RegexBuilder } from "../core/builder.js";
+import {
+  LLMError,
+  LLMConfigError,
+  LLMRateLimitError,
+  CodeInterpreterError,
+} from "../errors/index.js";
 
 /**
  * Live implementation using real Anthropic/OpenAI/etc APIs
@@ -24,12 +30,18 @@ import { RegexBuilder } from "../core/builder.js";
 export const LLMServiceLive = Layer.succeed(LLMService, {
   call: (prompt, config) =>
     callLLMWithRetry(prompt, config).pipe(
-      Effect.mapError(
-        (error) =>
-          new Error(
-            `LLM call failed: ${error instanceof Error ? error.message : String(error)}`
-          )
-      )
+      Effect.mapError((error) => {
+        // Convert existing LLM errors to tagged errors
+        if ("_tag" in error) {
+          // Already a tagged error from llm-client
+          return error as LLMError | LLMConfigError | LLMRateLimitError;
+        }
+        // Convert generic error to LLMError
+        return new LLMError({
+          message: error instanceof Error ? error.message : String(error),
+          cause: error,
+        });
+      })
     ),
 
   isAvailable: isLLMAvailable,
@@ -43,18 +55,24 @@ export const LLMServiceLive = Layer.succeed(LLMService, {
       );
 
       const response = yield* callLLMWithRetry(prompt, config).pipe(
-        Effect.mapError(
-          (error) =>
-            new Error(
-              `LLM call failed: ${error instanceof Error ? error.message : String(error)}`
-            )
-        )
+        Effect.mapError((error) => {
+          // Convert existing LLM errors to tagged errors
+          if ("_tag" in error) {
+            return error as LLMError | LLMConfigError | LLMRateLimitError;
+          }
+          return new LLMError({
+            message: error instanceof Error ? error.message : String(error),
+            cause: error,
+          });
+        })
       );
 
       const code = parseRegexBuilderCode(response);
       if (!code) {
         return yield* Effect.fail(
-          new Error("Failed to parse RegexBuilder code from LLM response")
+          new LLMError({
+            message: "Failed to parse RegexBuilder code from LLM response",
+          })
         );
       }
 
@@ -63,9 +81,11 @@ export const LLMServiceLive = Layer.succeed(LLMService, {
         pattern = interpretRegexBuilderCode(code);
       } catch (error) {
         return yield* Effect.fail(
-          new Error(
-            `Failed to interpret LLM-generated code: ${error instanceof Error ? error.message : String(error)}`
-          )
+          new CodeInterpreterError({
+            code,
+            reason: error instanceof Error ? error.message : String(error),
+            cause: error,
+          })
         );
       }
 

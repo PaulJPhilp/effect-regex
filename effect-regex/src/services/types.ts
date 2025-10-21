@@ -16,6 +16,14 @@ import type {
 import type { Ast } from "../core/ast.js";
 import type { LLMConfig, LLMProvider } from "../ai/llm-client.js";
 import type { PatternProposal } from "../ai/toolkit.js";
+import type {
+  EmitError,
+  TestExecutionError,
+  LLMError,
+  LLMConfigError,
+  LLMRateLimitError,
+  CodeInterpreterError,
+} from "../errors/index.js";
 
 /**
  * Service for regex pattern building and emission
@@ -25,15 +33,19 @@ import type { PatternProposal } from "../ai/toolkit.js";
 export interface RegexBuilderService {
   /**
    * Emit a regex pattern from builder
+   *
+   * @throws EmitError when pattern emission fails
    */
   readonly emit: (
     builder: RegexBuilder,
     dialect?: "js" | "re2" | "pcre",
     anchor?: boolean
-  ) => Effect.Effect<RegexPattern, Error>;
+  ) => Effect.Effect<RegexPattern, EmitError>;
 
   /**
    * Lint a pattern AST for dialect compatibility
+   *
+   * Note: Linting never fails - it returns validation results
    */
   readonly lint: (
     ast: Ast,
@@ -42,7 +54,9 @@ export interface RegexBuilderService {
 
   /**
    * Optimize a pattern AST (pure function)
-   * Note: This is a pure function, not wrapped in Effect
+   *
+   * Note: This is a pure function, not wrapped in Effect.
+   * Optimization is deterministic and cannot fail.
    */
   readonly optimize: (
     ast: Ast,
@@ -65,26 +79,40 @@ export const RegexBuilderService = Context.GenericTag<RegexBuilderService>(
 export interface LLMService {
   /**
    * Call LLM with prompt
+   *
+   * @throws LLMError when API call fails
+   * @throws LLMConfigError when configuration is invalid
+   * @throws LLMRateLimitError when rate limit is exceeded
    */
   readonly call: (
     prompt: string,
     config?: Partial<LLMConfig>
-  ) => Effect.Effect<string, Error>;
+  ) => Effect.Effect<string, LLMError | LLMConfigError | LLMRateLimitError>;
 
   /**
    * Check if LLM provider is available
+   *
+   * Note: Never fails - returns false if unavailable
    */
   readonly isAvailable: (provider: LLMProvider) => Effect.Effect<boolean>;
 
   /**
    * Propose pattern from examples using LLM
+   *
+   * @throws LLMError when API call fails
+   * @throws LLMConfigError when configuration is invalid
+   * @throws LLMRateLimitError when rate limit is exceeded
+   * @throws CodeInterpreterError when generated code is invalid
    */
   readonly proposePattern: (
     positiveExamples: readonly string[],
     negativeExamples: readonly string[],
     context?: string,
     config?: Partial<LLMConfig>
-  ) => Effect.Effect<PatternProposal, Error>;
+  ) => Effect.Effect<
+    PatternProposal,
+    LLMError | LLMConfigError | LLMRateLimitError | CodeInterpreterError
+  >;
 }
 
 /**
@@ -100,16 +128,20 @@ export const LLMService = Context.GenericTag<LLMService>("@services/LLMService")
 export interface ValidationService {
   /**
    * Test regex against test cases
+   *
+   * @throws TestExecutionError when pattern execution fails or times out
    */
   readonly test: (
     pattern: string,
     dialect: "js" | "re2-sim" | "re2",
     cases: readonly RegexTestCase[],
     timeoutMs?: number
-  ) => Effect.Effect<TestResult, Error>;
+  ) => Effect.Effect<TestResult, TestExecutionError>;
 
   /**
    * Validate pattern for dialect compatibility
+   *
+   * Note: Never fails - returns validation results
    */
   readonly validateForDialect: (
     pattern: RegexBuilder,
