@@ -1,0 +1,38 @@
+/**
+ * ValidationService Implementation
+ *
+ * Provides pattern validation and testing through a service layer:
+ * - test: Execute regex patterns against test cases with timeout protection
+ * - validateForDialect: Check pattern compatibility with target dialect
+ */
+
+import { Effect, Layer } from "effect";
+import { ValidationService } from "./types.js";
+import { testRegex as coreTestRegex } from "../core/tester.js";
+import { emit } from "../core/emitter.js";
+import { lint } from "../core/linter.js";
+
+/**
+ * Live implementation of ValidationService
+ */
+export const ValidationServiceLive = Layer.succeed(ValidationService, {
+  test: (pattern, dialect = "js", cases, timeoutMs = 100) =>
+    coreTestRegex(pattern, dialect, cases, timeoutMs).pipe(
+      Effect.mapError(
+        (error) =>
+          new Error(
+            `Test execution failed: ${error instanceof Error ? error.message : String(error)}`
+          )
+      )
+    ),
+
+  validateForDialect: (pattern, dialect) =>
+    Effect.gen(function* () {
+      const result = emit(pattern, dialect);
+      const lintResult = lint(result.ast, dialect);
+      return {
+        valid: lintResult.valid,
+        issues: lintResult.issues.map((issue) => issue.message),
+      };
+    }),
+});
