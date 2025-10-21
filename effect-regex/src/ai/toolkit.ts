@@ -1,9 +1,26 @@
 import { Effect } from "effect";
-import { RegexBuilder, emit } from "../core/builder.js";
-import { testRegex, type RegexTestCase, type TestResult } from "../core/tester.js";
+import { emit, RegexBuilder } from "../core/builder.js";
 import { lint } from "../core/linter.js";
-import { callLLMWithRetry, isLLMAvailable, type LLMConfig, LLMError, LLMConfigError } from "./llm-client.js";
-import { generateProposalPrompt, generateRefinementPrompt, parseRegexBuilderCode, validateRegexBuilderCode } from "./prompts.js";
+import {
+  type RegexTestCase,
+  type TestResult,
+  testRegex,
+} from "../core/tester.js";
+import {
+  callLLMWithRetry,
+  isLLMAvailable,
+  type LLMConfig,
+  type LLMConfigError,
+  LLMError,
+} from "./llm-client.js";
+import {
+  generateProposalPrompt,
+  parseRegexBuilderCode,
+} from "./prompts.js";
+import {
+  interpretRegexBuilderCode,
+  CodeInterpreterError,
+} from "./interpreter.js";
 
 /**
  * AI Toolkit for regex pattern development
@@ -43,36 +60,46 @@ export const proposePatternWithLLM = (
 ): Effect<LLMError | LLMConfigError, never, PatternProposal> => {
   return Effect.gen(function* () {
     // Generate prompt
-    const prompt = generateProposalPrompt(positiveExamples, negativeExamples, context);
+    const prompt = generateProposalPrompt(
+      positiveExamples,
+      negativeExamples,
+      context
+    );
 
     // Call LLM
     const response = yield* callLLMWithRetry(prompt, llmConfig);
 
     // Parse response
     const code = parseRegexBuilderCode(response);
-    if (!code || !validateRegexBuilderCode(code)) {
+    if (!code) {
       return yield* Effect.fail(
-        new LLMError("Failed to parse valid RegexBuilder code from LLM response")
+        new LLMError(
+          "Failed to parse RegexBuilder code from LLM response"
+        )
       );
     }
 
-    // Evaluate the code to get the pattern
-    // SAFETY: Code has been validated to only contain RegexBuilder calls
+    // Safely interpret the code without eval()
     let pattern: RegexBuilder;
     try {
-      // Create a safe evaluation context
-      const evalCode = `(function() { ${code} })()`;
-      pattern = eval(evalCode);
+      pattern = interpretRegexBuilderCode(code);
     } catch (error) {
-      return yield* Effect.fail(
-        new LLMError(`Failed to evaluate LLM-generated code: ${(error as Error).message}`)
-      );
+      if (error instanceof CodeInterpreterError) {
+        return yield* Effect.fail(
+          new LLMError(
+            `Failed to interpret LLM-generated code: ${error.message}`,
+            error
+          )
+        );
+      }
+      // Unexpected error - re-throw
+      throw error;
     }
 
     // Generate test cases from examples
     const testCases: RegexTestCase[] = [
-      ...positiveExamples.map(ex => ({ input: ex, shouldMatch: true })),
-      ...negativeExamples.map(ex => ({ input: ex, shouldMatch: false })),
+      ...positiveExamples.map((ex) => ({ input: ex, shouldMatch: true })),
+      ...negativeExamples.map((ex) => ({ input: ex, shouldMatch: false })),
     ];
 
     return {
@@ -97,17 +124,24 @@ export const proposePatternHeuristic = (
     // TODO: Implement more sophisticated AI-based pattern generation
 
     // Analyze examples to determine pattern type
-    const hasQuotes = positiveExamples.some(ex => ex.includes('"') || ex.includes("'"));
-    const hasNumbers = positiveExamples.some(ex => /\d/.test(ex));
-    const hasPaths = positiveExamples.some(ex => ex.includes('/') || ex.includes('\\'));
+    const hasQuotes = positiveExamples.some(
+      (ex) => ex.includes('"') || ex.includes("'")
+    );
+    const hasNumbers = positiveExamples.some((ex) => /\d/.test(ex));
+    const hasPaths = positiveExamples.some(
+      (ex) => ex.includes("/") || ex.includes("\\")
+    );
 
     let pattern: RegexBuilder;
     let reasoning: string;
 
     if (hasQuotes) {
-      pattern = RegexBuilder.lit('"').then(RegexBuilder.any().zeroOrMore()).then(RegexBuilder.lit('"'));
-      reasoning = "Detected quoted strings in examples, proposing quoted string pattern";
-    } else if (hasNumbers && positiveExamples.every(ex => /^\d+$/.test(ex))) {
+      pattern = RegexBuilder.lit('"')
+        .then(RegexBuilder.any().zeroOrMore())
+        .then(RegexBuilder.lit('"'));
+      reasoning =
+        "Detected quoted strings in examples, proposing quoted string pattern";
+    } else if (hasNumbers && positiveExamples.every((ex) => /^\d+$/.test(ex))) {
       pattern = RegexBuilder.digit().oneOrMore();
       reasoning = "All examples are numeric, proposing digit pattern";
     } else if (hasPaths) {
@@ -120,8 +154,8 @@ export const proposePatternHeuristic = (
 
     // Generate test cases from examples
     const testCases: RegexTestCase[] = [
-      ...positiveExamples.map(ex => ({ input: ex, shouldMatch: true })),
-      ...negativeExamples.map(ex => ({ input: ex, shouldMatch: false })),
+      ...positiveExamples.map((ex) => ({ input: ex, shouldMatch: true })),
+      ...negativeExamples.map((ex) => ({ input: ex, shouldMatch: false })),
     ];
 
     return {
@@ -144,12 +178,19 @@ export const proposePattern = (
 ): Effect<never, never, PatternProposal> => {
   return Effect.gen(function* () {
     // Check if LLM is available
-    const llmAvailable = yield* isLLMAvailable(llmConfig?.provider || "anthropic");
+    const llmAvailable = yield* isLLMAvailable(
+      llmConfig?.provider || "anthropic"
+    );
 
     if (llmAvailable) {
       // Try LLM-based generation
       const llmResult = yield* Effect.either(
-        proposePatternWithLLM(positiveExamples, negativeExamples, context, llmConfig)
+        proposePatternWithLLM(
+          positiveExamples,
+          negativeExamples,
+          context,
+          llmConfig
+        )
       );
 
       if (llmResult._tag === "Right") {
@@ -157,11 +198,18 @@ export const proposePattern = (
       }
 
       // LLM failed, log and fall back
-      console.warn("LLM pattern generation failed, falling back to heuristics:", llmResult.left.message);
+      console.warn(
+        "LLM pattern generation failed, falling back to heuristics:",
+        llmResult.left.message
+      );
     }
 
     // Fall back to heuristic-based generation
-    return yield* proposePatternHeuristic(positiveExamples, negativeExamples, context);
+    return yield* proposePatternHeuristic(
+      positiveExamples,
+      negativeExamples,
+      context
+    );
   });
 };
 
@@ -173,13 +221,17 @@ export const testPattern = (
   testCases: readonly RegexTestCase[],
   dialect: "js" | "re2-sim" | "re2" = "js",
   timeoutMs = 100
-): Effect<never, never, TestResult> => {
-  return Effect.gen(function* () {
+): Effect<never, never, TestResult> =>
+  Effect.gen(function* () {
     const regexResult = emit(pattern);
-    const testResult = yield* testRegex(regexResult.pattern, dialect, testCases, timeoutMs);
+    const testResult = yield* testRegex(
+      regexResult.pattern,
+      dialect,
+      testCases,
+      timeoutMs
+    );
     return testResult;
   });
-};
 
 /**
  * Analyze test results and suggest refinements
@@ -201,7 +253,8 @@ export const analyzeAndRefine = (
         // Should match but didn't - pattern too restrictive
         suggestions.push({
           issue: `Pattern fails to match: "${testCase.input}"`,
-          suggestion: "Consider making the pattern more permissive or adding alternatives",
+          suggestion:
+            "Consider making the pattern more permissive or adding alternatives",
           confidence: 0.8,
           proposedChanges: {
             ...proposal,
@@ -214,7 +267,8 @@ export const analyzeAndRefine = (
         // Shouldn't match but did - pattern too permissive
         suggestions.push({
           issue: `Pattern incorrectly matches: "${testCase.input}"`,
-          suggestion: "Consider making the pattern more specific or adding exclusions",
+          suggestion:
+            "Consider making the pattern more specific or adding exclusions",
           confidence: 0.7,
           proposedChanges: {
             ...proposal,
@@ -230,10 +284,11 @@ export const analyzeAndRefine = (
     }
 
     // Check for performance issues
-    if (testResults.warnings.some(w => w.includes("timeout"))) {
+    if (testResults.warnings.some((w) => w.includes("timeout"))) {
       suggestions.push({
         issue: "Pattern performance issues detected",
-        suggestion: "Consider simplifying quantifiers or reducing backtracking potential",
+        suggestion:
+          "Consider simplifying quantifiers or reducing backtracking potential",
         confidence: 0.9,
         proposedChanges: {
           ...proposal,
@@ -261,12 +316,19 @@ export const developPattern = (
     const history: PatternProposal[] = [];
 
     // Initial proposal
-    let currentProposal = yield* proposePattern(positiveExamples, negativeExamples);
+    let currentProposal = yield* proposePattern(
+      positiveExamples,
+      negativeExamples
+    );
     history.push(currentProposal);
 
     for (let i = 0; i < maxIterations; i++) {
       // Test current pattern
-      const testResults = yield* testPattern(currentProposal.pattern, currentProposal.testCases, dialect);
+      const testResults = yield* testPattern(
+        currentProposal.pattern,
+        currentProposal.testCases,
+        dialect
+      );
 
       // Check if we have a successful pattern
       if (testResults.failed === 0 && testResults.warnings.length === 0) {
@@ -288,13 +350,19 @@ export const developPattern = (
       }
 
       // Apply the highest confidence suggestion
-      const bestSuggestion = suggestions.sort((a, b) => b.confidence - a.confidence)[0];
+      const bestSuggestion = suggestions.sort(
+        (a, b) => b.confidence - a.confidence
+      )[0];
       currentProposal = bestSuggestion.proposedChanges;
       history.push(currentProposal);
     }
 
     // Return best result after max iterations
-    const finalTestResults = yield* testPattern(currentProposal.pattern, currentProposal.testCases, dialect);
+    const finalTestResults = yield* testPattern(
+      currentProposal.pattern,
+      currentProposal.testCases,
+      dialect
+    );
 
     return {
       finalPattern: currentProposal.pattern,
@@ -312,14 +380,13 @@ export const developPattern = (
 export const validateForDialect = (
   pattern: RegexBuilder,
   dialect: "js" | "re2" | "pcre"
-): Effect<never, never, { valid: boolean; issues: readonly string[] }> => {
-  return Effect.gen(function* () {
+): Effect<never, never, { valid: boolean; issues: readonly string[] }> =>
+  Effect.gen(function* () {
     const result = emit(pattern, dialect);
     const lintResult = lint(result.ast, dialect);
 
     return {
       valid: lintResult.valid,
-      issues: lintResult.issues.map(issue => issue.message),
+      issues: lintResult.issues.map((issue) => issue.message),
     };
   });
-};
