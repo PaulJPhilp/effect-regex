@@ -59,6 +59,13 @@ pnpm check
 ✅ **M3.2 Complete**: AI-powered pattern generation using Anthropic Claude API with automatic fallback
 ✅ **M3.3 Complete**: Pattern optimization engine with 4 AST transformation passes
 
+**Design Review Implementation** (IMPLEMENTATION_ROADMAP.md):
+✅ **Phase 1 Complete**: Security hardening - removed eval(), implemented safe AST interpreter
+✅ **Phase 2A Complete**: Pure function refactoring - removed Effect wrapper from optimize()
+✅ **Phase 2B Complete**: Service layer architecture - RegexBuilderService, LLMService, ValidationService
+✅ **Phase 2C Complete**: Precise error types - 10 tagged errors using Data.TaggedError
+✅ **Phase 3 Complete**: CLI consolidation - removed duplicate Cli.ts, single working bin.ts
+
 ## Development
 
 The root workspace uses Bun for fast development and package management. The `effect-regex/` directory contains a full Effect CLI application with:
