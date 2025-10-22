@@ -6,6 +6,10 @@ import {
   cls,
   group,
   lit,
+  lookbehind,
+  lookahead,
+  negativeLookbehind,
+  negativeLookahead,
   noncap,
   q,
   raw,
@@ -76,6 +80,46 @@ export class RegexBuilder {
 
   static backref(target: string | number): RegexBuilder {
     return new RegexBuilder(backref(target));
+  }
+
+  // Assertions (lookahead/lookbehind)
+  // Note: These are typically used as standalone assertions, not chained
+  // For most use cases, use the static methods instead
+  lookahead(pattern: RegexBuilder): RegexBuilder {
+    // This pattern followed by a lookahead
+    return this.then(RegexBuilder.lookahead(pattern));
+  }
+
+  negativeLookahead(pattern: RegexBuilder): RegexBuilder {
+    // This pattern followed by a negative lookahead
+    return this.then(RegexBuilder.negativeLookahead(pattern));
+  }
+
+  lookbehind(pattern: RegexBuilder): RegexBuilder {
+    // Lookbehind assertion followed by this pattern
+    return RegexBuilder.lookbehind(pattern).then(this);
+  }
+
+  negativeLookbehind(pattern: RegexBuilder): RegexBuilder {
+    // Negative lookbehind assertion followed by this pattern
+    return RegexBuilder.negativeLookbehind(pattern).then(this);
+  }
+
+  // Static assertion constructors
+  static lookahead(pattern: RegexBuilder): RegexBuilder {
+    return new RegexBuilder(lookahead(pattern.ast));
+  }
+
+  static negativeLookahead(pattern: RegexBuilder): RegexBuilder {
+    return new RegexBuilder(negativeLookahead(pattern.ast));
+  }
+
+  static lookbehind(pattern: RegexBuilder): RegexBuilder {
+    return new RegexBuilder(lookbehind(pattern.ast));
+  }
+
+  static negativeLookbehind(pattern: RegexBuilder): RegexBuilder {
+    return new RegexBuilder(negativeLookbehind(pattern.ast));
   }
 
   // Quantifiers

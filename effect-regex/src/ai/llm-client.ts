@@ -219,9 +219,11 @@ export const callLLMWithRetry = (
       if (error._tag === "LLMRateLimitError") {
         const delay = error.retryAfter
           ? error.retryAfter * 1000
-          : Math.min(2 ** attempt * 1000, 10000); // Cap at 10s
+          : Math.min(2 ** attempt * 1000, 10_000); // Cap at 10s
 
-        console.warn(`LLM rate limited, retrying after ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+        console.warn(
+          `LLM rate limited, retrying after ${delay}ms (attempt ${attempt + 1}/${maxRetries})`
+        );
         yield* Effect.sleep(delay);
         continue;
       }
@@ -231,11 +233,14 @@ export const callLLMWithRetry = (
       // Exponential backoff with jitter for other errors (network, timeout, etc.)
       if (attempt < maxRetries - 1) {
         const baseDelay = 2 ** attempt * 1000; // 1s, 2s, 4s, 8s...
-        const maxDelay = Math.min(baseDelay, 10000); // Cap at 10s
+        const maxDelay = Math.min(baseDelay, 10_000); // Cap at 10s
         const jitter = Math.random() * 0.3 * maxDelay; // 0-30% jitter
         const delay = Math.floor(maxDelay + jitter);
 
-        console.warn(`LLM call failed, retrying after ${delay}ms (attempt ${attempt + 1}/${maxRetries}):`, error.message);
+        console.warn(
+          `LLM call failed, retrying after ${delay}ms (attempt ${attempt + 1}/${maxRetries}):`,
+          error.message
+        );
         yield* Effect.sleep(delay);
       }
     }

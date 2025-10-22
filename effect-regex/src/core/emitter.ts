@@ -272,6 +272,49 @@ const emitAst = (
       });
     }
 
+    case "assertion": {
+      const { result: childResult, newState } = emitAst(
+        node.child,
+        currentState
+      );
+      currentState = newState;
+      const notes: string[] = [...childResult.notes];
+      let pattern: string;
+
+      // Check dialect support for lookbehind
+      if (
+        (node.kind === "lookbehind" || node.kind === "negative-lookbehind") &&
+        !DIALECT_INFO[currentState.dialect].supportsLookbehind
+      ) {
+        notes.push(
+          `${node.kind} not supported in ${currentState.dialect.toUpperCase()} dialect`
+        );
+        pattern = `__${node.kind.toUpperCase().replace(/-/g, "_")}_UNSUPPORTED__`;
+      } else {
+        // Emit assertion pattern
+        switch (node.kind) {
+          case "lookahead":
+            pattern = `(?=${childResult.pattern})`;
+            break;
+          case "negative-lookahead":
+            pattern = `(?!${childResult.pattern})`;
+            break;
+          case "lookbehind":
+            pattern = `(?<=${childResult.pattern})`;
+            break;
+          case "negative-lookbehind":
+            pattern = `(?<!${childResult.pattern})`;
+            break;
+        }
+      }
+
+      return processResult({
+        pattern,
+        captureMap: childResult.captureMap,
+        notes,
+      });
+    }
+
     default:
       throw new Error(`Unknown AST node type: ${(node as any).type}`);
   }
@@ -328,6 +371,16 @@ export const validateDialect = (
             `Backreferences not supported in ${dialect.toUpperCase()}`
           );
         }
+        break;
+
+      case "assertion":
+        if (
+          (node.kind === "lookbehind" || node.kind === "negative-lookbehind") &&
+          !info.supportsLookbehind
+        ) {
+          issues.push(`${node.kind} not supported in ${dialect.toUpperCase()}`);
+        }
+        validateNode(node.child);
         break;
 
       case "seq":

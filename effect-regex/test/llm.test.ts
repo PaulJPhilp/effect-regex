@@ -211,7 +211,7 @@ describe("LLM Pattern Generation (requires API key)", () => {
       // If it failed, should be a proper LLM error
       expect(result.left).toHaveProperty("_tag");
     }
-  }, 15000); // 15 second timeout for API call
+  }, 15_000); // 15 second timeout for API call
 
   it("should use LLM when API key is available and fallback on error", async () => {
     const result = await Effect.runPromise(
@@ -226,7 +226,7 @@ describe("LLM Pattern Generation (requires API key)", () => {
     expect(result).toHaveProperty("pattern");
     expect(result.reasoning).toBeTruthy();
     expect(result.confidence).toBeGreaterThan(0); // Any confidence is ok
-  }, 15000); // 15 second timeout for API call
+  }, 15_000); // 15 second timeout for API call
 
   it("should retry on transient errors with proper error handling", async () => {
     const result = await Effect.runPromise(
@@ -251,5 +251,5 @@ describe("LLM Pattern Generation (requires API key)", () => {
         result.left instanceof LLMError || result.left instanceof LLMConfigError
       ).toBe(true);
     }
-  }, 30000); // 30 second timeout for retries (2 retries with backoff)
+  }, 30_000); // 30 second timeout for retries (2 retries with backoff)
 });

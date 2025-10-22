@@ -53,6 +53,13 @@ export interface BackrefNode extends AstNode {
   readonly target: string | number;
 }
 
+// Assertions (lookahead/lookbehind)
+export interface AssertionNode extends AstNode {
+  readonly type: "assertion";
+  readonly kind: "lookahead" | "negative-lookahead" | "lookbehind" | "negative-lookbehind";
+  readonly child: AstNode;
+}
+
 // Quantifiers
 export interface QuantifierNode extends AstNode {
   readonly type: "q";
@@ -78,6 +85,7 @@ export type Ast =
   | GroupNode
   | NonCapNode
   | BackrefNode
+  | AssertionNode
   | QuantifierNode
   | AnchorNode;
 
@@ -122,6 +130,30 @@ export const noncap = (child: AstNode): NonCapNode => ({
 export const backref = (target: string | number): BackrefNode => ({
   type: "backref",
   target,
+});
+
+export const lookahead = (child: AstNode): AssertionNode => ({
+  type: "assertion",
+  kind: "lookahead",
+  child,
+});
+
+export const negativeLookahead = (child: AstNode): AssertionNode => ({
+  type: "assertion",
+  kind: "negative-lookahead",
+  child,
+});
+
+export const lookbehind = (child: AstNode): AssertionNode => ({
+  type: "assertion",
+  kind: "lookbehind",
+  child,
+});
+
+export const negativeLookbehind = (child: AstNode): AssertionNode => ({
+  type: "assertion",
+  kind: "negative-lookbehind",
+  child,
 });
 
 export const q = (
@@ -191,6 +223,19 @@ const emitNode = (node: AstNode, dialect: "js" | "re2" | "pcre"): string => {
         return `\\k<${node.target}>`;
       }
       return `\\${node.target}`;
+    case "assertion": {
+      const childPattern = emitNode(node.child, dialect);
+      switch (node.kind) {
+        case "lookahead":
+          return `(?=${childPattern})`;
+        case "negative-lookahead":
+          return `(?!${childPattern})`;
+        case "lookbehind":
+          return `(?<=${childPattern})`;
+        case "negative-lookbehind":
+          return `(?<!${childPattern})`;
+      }
+    }
   }
 };
 
