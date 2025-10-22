@@ -1367,11 +1367,60 @@ All CLI commands verified working:
 ## Phase 4: Standard Library Pattern Refactoring
 
 **Priority**: High
-**Effort**: 2-3 days
+**Effort**: 2-3 days (Completed in <1 day)
 **Branch**: `refactor/pattern-consistency`
 **Dependencies**: None
+**Status**: ✅ **COMPLETE**
 
-(Detailed breakdown follows same pattern)
+### Implementation Summary
+
+**Problem**: Standard library patterns had inconsistent implementations:
+- Some patterns used fluent API correctly (quotedString, keyValue, integer, ipv4)
+- Others used raw regex literals wrapped in `RegexBuilder.lit()` (uuidV4, ipv6Compressed, isoDate, isoDateTime)
+
+**Solution**: Refactored all patterns to use fluent API exclusively:
+
+1. **uuidV4** (lines 112-124):
+   - Before: `RegexBuilder.lit("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx")` (placeholder!)
+   - After: Proper fluent API with `.charClass("0-9a-fA-F").exactly(8)` etc.
+   - Now correctly enforces UUID v4 format (version 4 + variant bits)
+
+2. **isoDate** (lines 208-214):
+   - Before: `RegexBuilder.lit("\\d{4}-\\d{2}-\\d{2}")` (raw regex!)
+   - After: `digit().exactly(4).then(RegexBuilder.lit("-")).then(digit().exactly(2))...`
+
+3. **isoDateTime** (lines 251-273):
+   - Before: `RegexBuilder.lit("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")` (raw regex!)
+   - After: Composed from date + time components using fluent API
+   - Fixed milliseconds handling with proper `.group().optional()` pattern
+
+4. **ipv6Compressed** (lines 173-215):
+   - Before: Multiple `RegexBuilder.lit("([0-9a-fA-F]{1,4}:){7}...")` (raw regex!)
+   - After: Fluent API with proper alternations for different IPv6 formats
+   - Covers: `::1`, IPv4-mapped (`::ffff:192.0.2.1`), compressed, and full IPv6
+
+**Files Changed**:
+- Modified: `effect-regex/src/std/patterns.ts` (refactored 4 patterns)
+- Added: `effect-regex/test/patterns-phase4.test.ts` (15 comprehensive tests)
+
+**Test Results**:
+```
+✓ test/patterns-phase4.test.ts (15 tests) - All passing
+  - uuidV4: 4 tests (valid format, invalid UUIDs, version enforcement, variant bits)
+  - isoDate: 2 tests (valid format, invalid formats)
+  - isoDateTime: 3 tests (with/without milliseconds, invalid formats)
+  - ipv6Compressed: 5 tests (loopback, IPv4-mapped, compressed, full, invalid)
+  - Pattern consistency: 1 test (all patterns emit valid regexes)
+```
+
+**Net Impact**: All 13 standard library patterns now use consistent fluent API
+
+### Key Learnings
+
+1. **`.group()` without name** creates non-capturing groups `(?:...)`
+2. **Quantifiers require grouping**: Must use `.group().optional()` not `.optional()` on compound patterns
+3. **No double-escaping**: `RegexBuilder.lit(".")` handles escaping automatically
+4. **UUID v4 format**: 3rd group starts with '4', 4th group starts with [89abAB]
 
 ---
 

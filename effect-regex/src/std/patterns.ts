@@ -1,4 +1,4 @@
-import { RegexBuilder, digit, word } from "../core/builder.js";
+import { digit, RegexBuilder, word } from "../core/builder.js";
 
 /**
  * Standard library of vetted regex patterns
@@ -26,9 +26,9 @@ export const keyValue = word()
   .then(RegexBuilder.lit("="))
   .then(
     RegexBuilder.alt(
-      quotedString,           // Reuse quoted string pattern
-      word().oneOrMore(),     // Or simple unquoted values
-      digit().oneOrMore()     // Or numeric values
+      quotedString, // Reuse quoted string pattern
+      word().oneOrMore(), // Or simple unquoted values
+      digit().oneOrMore() // Or numeric values
     )
   )
   .group("kv");
@@ -56,10 +56,10 @@ export const pathSegment = RegexBuilder.alt(
  * Examples: /usr/bin/node, ./src/main.ts, relative/path/file.txt
  */
 export const filePathBasic = RegexBuilder.alt(
-  RegexBuilder.lit("./"),  // Relative path
+  RegexBuilder.lit("./"), // Relative path
   RegexBuilder.lit("../"), // Parent directory
-  RegexBuilder.lit("/"),   // Absolute path
-  pathSegment              // Just filename
+  RegexBuilder.lit("/"), // Absolute path
+  pathSegment // Just filename
 )
   .then(
     RegexBuilder.alt(
@@ -78,12 +78,14 @@ export const csvList = RegexBuilder.alt(
   RegexBuilder.charClass(",\n\r", true).oneOrMore() // Unquoted items
 )
   .then(
-    RegexBuilder.lit(",").then(
-      RegexBuilder.alt(
-        quotedString,
-        RegexBuilder.charClass(",\n\r", true).oneOrMore()
+    RegexBuilder.lit(",")
+      .then(
+        RegexBuilder.alt(
+          quotedString,
+          RegexBuilder.charClass(",\n\r", true).oneOrMore()
+        )
       )
-    ).zeroOrMore()
+      .zeroOrMore()
   )
   .group("csv");
 
@@ -104,15 +106,29 @@ export const integer = RegexBuilder.alt(
 /**
  * Matches UUID v4 format
  * Examples: 123e4567-e89b-12d3-a456-426614174000
+ * Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+ * where x is any hex digit [0-9a-fA-F], and y is one of [89abAB]
  */
-export const uuidV4 = RegexBuilder.lit("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx")
+export const uuidV4 = RegexBuilder.charClass("0-9a-fA-F")
+  .exactly(8)
+  .then(RegexBuilder.lit("-"))
+  .then(RegexBuilder.charClass("0-9a-fA-F").exactly(4))
+  .then(RegexBuilder.lit("-"))
+  .then(RegexBuilder.lit("4"))
+  .then(RegexBuilder.charClass("0-9a-fA-F").exactly(3))
+  .then(RegexBuilder.lit("-"))
+  .then(RegexBuilder.charClass("89abAB"))
+  .then(RegexBuilder.charClass("0-9a-fA-F").exactly(3))
+  .then(RegexBuilder.lit("-"))
+  .then(RegexBuilder.charClass("0-9a-fA-F").exactly(12))
   .group("uuid");
 
 /**
  * Matches strict semantic version format
  * Examples: 1.0.0, 2.1.3-alpha.1, 3.0.0-beta.2+build.1
  */
-export const semverStrict = RegexBuilder.lit("v").optional()
+export const semverStrict = RegexBuilder.lit("v")
+  .optional()
   .then(digit().oneOrMore())
   .then(RegexBuilder.lit("."))
   .then(digit().oneOrMore())
@@ -152,43 +168,70 @@ export const ipv4 = digit()
 /**
  * Matches compressed IPv6 addresses
  * Examples: ::1, 2001:db8::1, ::ffff:192.0.2.1
+ * Note: Simplified pattern covering common IPv6 formats
  */
 export const ipv6Compressed = RegexBuilder.alt(
-  // Full IPv6: 2001:0db8:85a3:0000:0000:8a2e:0370:7334
-  RegexBuilder.lit("([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}"),
-  // Compressed: 2001:db8:85a3::8a2e:370:7334
-  RegexBuilder.lit("([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}"),
-  // ::1 (loopback)
+  // ::1 (loopback) - simplest case
   RegexBuilder.lit("::1"),
+
   // IPv4-mapped IPv6: ::ffff:192.0.2.1
-  RegexBuilder.lit("::ffff:(?:\\d{1,3}\\.){3}\\d{1,3}")
-)
-.group("ipv6");
+  RegexBuilder.lit("::ffff:")
+    .then(digit().between(1, 3))
+    .then(RegexBuilder.lit("."))
+    .then(digit().between(1, 3))
+    .then(RegexBuilder.lit("."))
+    .then(digit().between(1, 3))
+    .then(RegexBuilder.lit("."))
+    .then(digit().between(1, 3)),
+
+  // Compressed IPv6 with :: (e.g., 2001:db8::1, fe80::1)
+  RegexBuilder.charClass("0-9a-fA-F")
+    .between(1, 4)
+    .then(RegexBuilder.lit(":"))
+    .then(
+      RegexBuilder.charClass("0-9a-fA-F")
+        .between(1, 4)
+        .then(RegexBuilder.lit(":"))
+        .group() // Non-capturing group for the repeating part
+        .between(0, 6)
+    )
+    .then(RegexBuilder.lit(":"))
+    .then(
+      RegexBuilder.charClass("0-9a-fA-F")
+        .between(1, 4)
+        .group() // Non-capturing group before optional
+        .optional()
+    ),
+
+  // Full IPv6: 2001:0db8:85a3:0000:0000:8a2e:0370:7334
+  RegexBuilder.charClass("0-9a-fA-F")
+    .between(1, 4)
+    .then(
+      RegexBuilder.lit(":")
+        .then(RegexBuilder.charClass("0-9a-fA-F").between(1, 4))
+        .group() // Non-capturing group before exact quantifier
+        .exactly(7)
+    )
+).group("ipv6");
 
 /**
  * Matches floating point numbers
  * Examples: 3.14, -0.5, 1.23e-4, 42.0
  */
-export const float = RegexBuilder.lit("-").optional()
+export const float = RegexBuilder.lit("-")
+  .optional()
   .then(digit().oneOrMore())
+  .then(RegexBuilder.lit(".").then(digit().oneOrMore()).optional())
   .then(
-    RegexBuilder.lit(".")
+    RegexBuilder.alt(RegexBuilder.lit("e"), RegexBuilder.lit("E"))
+      .then(
+        RegexBuilder.alt(
+          RegexBuilder.lit("+"),
+          RegexBuilder.lit("-")
+        ).optional()
+      )
       .then(digit().oneOrMore())
       .optional()
-  )
-  .then(
-    RegexBuilder.alt(
-      RegexBuilder.lit("e"),
-      RegexBuilder.lit("E")
-    )
-    .then(
-      RegexBuilder.alt(
-        RegexBuilder.lit("+"),
-        RegexBuilder.lit("-")
-      ).optional()
-    )
-    .then(digit().oneOrMore())
-    .optional()
   )
   .group("float");
 
@@ -196,16 +239,35 @@ export const float = RegexBuilder.lit("-").optional()
  * Matches ISO date format (YYYY-MM-DD)
  * Examples: 2023-12-25, 1999-01-01
  */
-export const isoDate = RegexBuilder.lit("\\d{4}-\\d{2}-\\d{2}")
+export const isoDate = digit()
+  .exactly(4)
+  .then(RegexBuilder.lit("-"))
+  .then(digit().exactly(2))
+  .then(RegexBuilder.lit("-"))
+  .then(digit().exactly(2))
   .group("date");
 
 /**
  * Matches ISO datetime format (YYYY-MM-DDTHH:mm:ss.sssZ)
  * Examples: 2023-12-25T10:30:00.000Z, 1999-01-01T23:59:59Z
  */
-export const isoDateTime = RegexBuilder.lit("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")
+export const isoDateTime = digit()
+  .exactly(4)
+  .then(RegexBuilder.lit("-"))
+  .then(digit().exactly(2))
+  .then(RegexBuilder.lit("-"))
+  .then(digit().exactly(2))
+  .then(RegexBuilder.lit("T"))
+  .then(digit().exactly(2))
+  .then(RegexBuilder.lit(":"))
+  .then(digit().exactly(2))
+  .then(RegexBuilder.lit(":"))
+  .then(digit().exactly(2))
   .then(
-    RegexBuilder.lit("\\.\\d{3}").optional()
+    RegexBuilder.lit(".")
+      .then(digit().exactly(3))
+      .group() // Non-capturing group before optional
+      .optional()
   )
   .then(RegexBuilder.lit("Z"))
   .group("datetime");
