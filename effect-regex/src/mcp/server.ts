@@ -12,6 +12,8 @@ import { Effect } from "effect";
 import { developPattern } from "../ai/toolkit.js";
 import { buildCommandRegex } from "../command/command-spec.js";
 import { emit, RegexBuilder } from "../core/builder.js";
+import { explain } from "../core/explainer.js";
+import { lint } from "../core/linter.js";
 import { optimize } from "../core/optimizer.js";
 import { type RegexTestCase, testRegex } from "../core/tester.js";
 import { STANDARD_PATTERNS } from "../std/patterns.js";
@@ -325,7 +327,7 @@ const DEFAULT_TIMEOUT_MS = 100;
 function validateInputEffect(input: any): Effect.Effect<never, McpError, void> {
   return Effect.gen(function* () {
     if (typeof input === "string" && input.length > MAX_PATTERN_LENGTH) {
-      return Effect.fail(
+      yield* Effect.fail(
         new McpError(
           ErrorCode.InvalidParams,
           `Pattern too long: ${input.length} > ${MAX_PATTERN_LENGTH}`
@@ -338,21 +340,21 @@ function validateInputEffect(input: any): Effect.Effect<never, McpError, void> {
       Array.isArray(input.cases) &&
       input.cases.length > MAX_TEST_CASES
     ) {
-      return Effect.fail(
+      yield* Effect.fail(
         new McpError(
           ErrorCode.InvalidParams,
           `Too many test cases: ${input.cases.length} > ${MAX_TEST_CASES}`
         )
       );
     }
-    return Effect.unit; // Represents a successful void return
+    // No explicit return needed for void functions
   });
 }
 
 // Tool handlers
 function handleBuildRegex(
   args: any
-): Effect.Effect<never, McpError, { content: any[] }> {
+): Effect.Effect<never, McpError, any> {
   return Effect.gen(function* () {
     yield* validateInputEffect(args);
 
@@ -381,14 +383,7 @@ function handleBuildRegex(
       );
     }
 
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(result, null, 2),
-        },
-      ],
-    };
+    return result;
   }).pipe(
     Effect.catchAll((error) => {
       if (error instanceof McpError) {
@@ -406,7 +401,7 @@ function handleBuildRegex(
 
 function handleTestRegex(
   args: any
-): Effect.Effect<never, McpError, { content: any[] }> {
+): Effect.Effect<never, McpError, any> {
   return Effect.gen(function* () {
     yield* validateInputEffect(args);
 
@@ -430,14 +425,7 @@ function handleTestRegex(
       timeoutMs
     );
 
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(result, null, 2),
-        },
-      ],
-    };
+    return result;
   }).pipe(
     Effect.catchAll((error) => {
       if (error instanceof McpError) {
@@ -453,22 +441,53 @@ function handleTestRegex(
   );
 }
 
-const handleLintRegex = (args: unknown) =>
-  Effect.gen(function* () {
-    const { pattern, flags } = yield* validateInputEffect(
-      args,
-      LintRegexRequestSchema
+function handleLintRegex(
+  args: any
+): Effect.Effect<never, McpError, any> {
+  return Effect.gen(function* () {
+    yield* validateInputEffect(args);
+
+    const { pattern: patternStr, dialect = "js" } = args;
+
+    // Try to compile the regex - if it throws, catch it and return invalid result
+    const validationResult = yield* Effect.try(() => new RegExp(patternStr)).pipe(
+      Effect.map(() => ({
+        valid: true,
+        issues: []
+      })),
+      Effect.catchAll((error) => {
+        // If regex compilation failed, return success with validation error
+        return Effect.succeed({
+          valid: false,
+          issues: [{
+            type: "syntax",
+            severity: "error",
+            message: (error as Error).message,
+            pattern: patternStr
+          }]
+        });
+      })
     );
 
-    const result = yield* Linter.lint({ pattern, flags });
-
-    // This is the part that needs to return a plain object, not an Effect
-    return { valid: result.valid, issues: result.issues };
-  });
+    return validationResult;
+  }).pipe(
+    Effect.catchAll((error) => {
+      if (error instanceof McpError) {
+        return Effect.fail(error);
+      }
+      return Effect.fail(
+        new McpError(
+          ErrorCode.InternalError,
+          `Lint failed: ${(error as Error).message}`
+        )
+      );
+    })
+  );
+}
 
 function handleConvertRegex(
   args: any
-): Effect.Effect<never, McpError, { content: any[] }> {
+): Effect.Effect<never, McpError, any> {
   return Effect.gen(function* () {
     yield* validateInputEffect(args);
 
@@ -492,14 +511,7 @@ function handleConvertRegex(
       ],
     };
 
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(result, null, 2),
-        },
-      ],
-    };
+    return result;
   }).pipe(
     Effect.catchAll((error) => {
       if (error instanceof McpError) {
@@ -515,21 +527,43 @@ function handleConvertRegex(
   );
 }
 
-const handleExplainRegex = (args: unknown) =>
-  Effect.gen(function* () {
-    const { pattern, dialect } = yield* validateInputEffect(
-      args,
-      ExplainRegexRequestSchema
-    );
+function handleExplainRegex(
+  args: any
+): Effect.Effect<never, McpError, any> {
+  return Effect.gen(function* () {
+    yield* validateInputEffect(args);
 
-    const explanation = yield* Explainer.explain({ pattern, dialect });
+    const { pattern: patternStr, dialect = "js", format = "tree" } = args;
 
-    return { pattern, explanation };
-  });
+    // For now, return a basic explanation
+    // TODO: Implement pattern parsing to create AST for real explanation
+    return {
+      pattern: patternStr,
+      explanation: {
+        type: "pattern",
+        description: `Pattern explanation not yet fully implemented`,
+        pattern: patternStr,
+        dialect
+      }
+    };
+  }).pipe(
+    Effect.catchAll((error) => {
+      if (error instanceof McpError) {
+        return Effect.fail(error);
+      }
+      return Effect.fail(
+        new McpError(
+          ErrorCode.InternalError,
+          `Explain failed: ${(error as Error).message}`
+        )
+      );
+    })
+  );
+}
 
 function handleLibraryList(
   args: any
-): Effect.Effect<never, McpError, { content: any[] }> {
+): Effect.Effect<never, McpError, any> {
   return Effect.gen(function* () {
     // No validateInputEffect since the error is handled differently
 
@@ -561,20 +595,9 @@ function handleLibraryList(
     }
 
     return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(
-            {
-              total: patterns.length,
-              patterns,
-              filters: args?.filter || null,
-            },
-            null,
-            2
-          ),
-        },
-      ],
+      total: patterns.length,
+      patterns,
+      filters: args?.filter || null,
     };
   }).pipe(
     Effect.catchAll((error) => {
@@ -593,7 +616,7 @@ function handleLibraryList(
 
 function handleProposePattern(
   args: any
-): Effect.Effect<never, McpError, { content: any[] }> {
+): Effect.Effect<never, McpError, any> {
   return Effect.gen(function* () {
     yield* validateInputEffect(args);
 
@@ -617,30 +640,19 @@ function handleProposePattern(
     const emittedPattern = emit(result.finalPattern, dialect as any, false);
 
     return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(
-            {
-              success: result.success,
-              pattern: emittedPattern.pattern,
-              iterations: result.iterations,
-              testResults: result.testResults,
-              captureMap: emittedPattern.captureMap,
-              notes: emittedPattern.notes,
-              history: result.history.map((proposal, idx) => ({
-                iteration: idx + 1,
-                reasoning: proposal.reasoning,
-                confidence: proposal.confidence,
-                pattern: emit(proposal.pattern, dialect as any, false).pattern,
-              })),
-              context: context || null,
-            },
-            null,
-            2
-          ),
-        },
-      ],
+      success: result.success,
+      pattern: emittedPattern.pattern,
+      iterations: result.iterations,
+      testResults: result.testResults,
+      captureMap: emittedPattern.captureMap,
+      notes: emittedPattern.notes,
+      history: result.history.map((proposal, idx) => ({
+        iteration: idx + 1,
+        reasoning: proposal.reasoning,
+        confidence: proposal.confidence,
+        pattern: emit(proposal.pattern, dialect as any, false).pattern,
+      })),
+      context: context || null,
     };
   }).pipe(
     Effect.catchAll((error) => {
@@ -659,7 +671,7 @@ function handleProposePattern(
 
 function handleOptimizePattern(
   args: any
-): Effect.Effect<never, McpError, { content: any[] }> {
+): Effect.Effect<never, McpError, any> {
   return Effect.gen(function* () {
     yield* validateInputEffect(args);
 
@@ -703,40 +715,29 @@ function handleOptimizePattern(
     const afterResult = emit(optimizedBuilder, dialect as any, false);
 
     return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(
-            {
-              pattern: patternName || "custom",
-              before: {
-                pattern: beforeResult.pattern,
-                nodes: result.beforeSize,
-                captureMap: beforeResult.captureMap,
-              },
-              after: {
-                pattern: afterResult.pattern,
-                nodes: result.afterSize,
-                captureMap: afterResult.captureMap,
-              },
-              optimization: {
-                nodesReduced: result.nodesReduced,
-                reductionPercent:
-                  result.beforeSize > 0
-                    ? Math.round(
-                        (result.nodesReduced / result.beforeSize) * 100
-                      )
-                    : 0,
-                passesApplied: result.passesApplied,
-                iterations: result.passesApplied.length,
-              },
-              dialect,
-            },
-            null,
-            2
-          ),
-        },
-      ],
+      pattern: patternName || "custom",
+      before: {
+        pattern: beforeResult.pattern,
+        nodes: result.beforeSize,
+        captureMap: beforeResult.captureMap,
+      },
+      after: {
+        pattern: afterResult.pattern,
+        nodes: result.afterSize,
+        captureMap: afterResult.captureMap,
+      },
+      optimization: {
+        nodesReduced: result.nodesReduced,
+        reductionPercent:
+          result.beforeSize > 0
+            ? Math.round(
+                (result.nodesReduced / result.beforeSize) * 100
+              )
+            : 0,
+        passesApplied: result.passesApplied,
+        iterations: result.passesApplied.length,
+      },
+      dialect,
     };
   }).pipe(
     Effect.catchAll((error) => {
