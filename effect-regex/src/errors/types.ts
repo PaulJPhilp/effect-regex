@@ -47,9 +47,7 @@ export class OptimizationError extends Data.TaggedError("OptimizationError")<{
  * Thrown when regex testing fails due to timeout, invalid pattern,
  * or execution errors.
  */
-export class TestExecutionError extends Data.TaggedError(
-  "TestExecutionError"
-)<{
+export class TestExecutionError extends Data.TaggedError("TestExecutionError")<{
   readonly pattern: string;
   readonly testCase?: RegexTestCase;
   readonly reason: string;

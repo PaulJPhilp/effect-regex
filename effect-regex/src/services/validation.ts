@@ -7,11 +7,11 @@
  */
 
 import { Effect, Layer } from "effect";
-import { ValidationService } from "./types.js";
-import { testRegex as coreTestRegex } from "../core/tester.js";
 import { emit } from "../core/emitter.js";
 import { lint } from "../core/linter.js";
+import { testRegex as coreTestRegex } from "../core/tester.js";
 import { TestExecutionError } from "../errors/index.js";
+import { ValidationService } from "./types.js";
 
 /**
  * Live implementation of ValidationService
@@ -24,7 +24,8 @@ export const ValidationServiceLive = Layer.succeed(ValidationService, {
           new TestExecutionError({
             pattern,
             reason: error instanceof Error ? error.message : String(error),
-            timedOut: error instanceof Error && error.message.includes("timeout"),
+            timedOut:
+              error instanceof Error && error.message.includes("timeout"),
           })
       )
     ),

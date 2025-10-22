@@ -3,8 +3,8 @@
  * Supports multiple providers with Effect-based error handling
  */
 
-import { Effect, Config } from "effect";
 import Anthropic from "@anthropic-ai/sdk";
+import { Effect } from "effect";
 
 /**
  * Supported LLM providers
@@ -27,7 +27,10 @@ export interface LLMConfig {
  */
 export class LLMError {
   readonly _tag = "LLMError";
-  constructor(readonly message: string, readonly cause?: unknown) {}
+  constructor(
+    readonly message: string,
+    readonly cause?: unknown
+  ) {}
 }
 
 export class LLMConfigError {
@@ -53,11 +56,14 @@ export const defaultConfig: LLMConfig = {
 /**
  * Get API key from environment or config
  */
-const getApiKey = (provider: LLMProvider): Effect.Effect<string, LLMConfigError> => {
-  return Effect.gen(function* () {
-    const envKey = provider === "anthropic"
-      ? process.env.ANTHROPIC_API_KEY
-      : process.env.OPENAI_API_KEY;
+const getApiKey = (
+  provider: LLMProvider
+): Effect.Effect<string, LLMConfigError> =>
+  Effect.gen(function* () {
+    const envKey =
+      provider === "anthropic"
+        ? process.env.ANTHROPIC_API_KEY
+        : process.env.OPENAI_API_KEY;
 
     if (!envKey) {
       return yield* Effect.fail(
@@ -69,7 +75,6 @@ const getApiKey = (provider: LLMProvider): Effect.Effect<string, LLMConfigError>
 
     return envKey;
   });
-};
 
 /**
  * Call Anthropic Claude API
@@ -84,25 +89,31 @@ const callAnthropic = (
     const client = new Anthropic({ apiKey });
 
     const result = yield* Effect.tryPromise({
-      try: () => client.messages.create({
-        model: config.model || "claude-3-5-sonnet-20241022",
-        max_tokens: config.maxTokens || 2048,
-        temperature: config.temperature || 0.7,
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-      }),
+      try: () =>
+        client.messages.create({
+          model: config.model || "claude-3-5-sonnet-20241022",
+          max_tokens: config.maxTokens || 2048,
+          temperature: config.temperature || 0.7,
+          messages: [
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+        }),
       catch: (error: any) => {
         // Handle rate limiting
         if (error?.status === 429) {
           const retryAfter = error?.headers?.["retry-after"];
-          return new LLMRateLimitError(retryAfter ? parseInt(retryAfter) : undefined);
+          return new LLMRateLimitError(
+            retryAfter ? Number.parseInt(retryAfter) : undefined
+          );
         }
-        return new LLMError(`Anthropic API error: ${error?.message || "Unknown error"}`, error);
-      }
+        return new LLMError(
+          `Anthropic API error: ${error?.message || "Unknown error"}`,
+          error
+        );
+      },
     });
 
     const content = result.content[0];
@@ -122,11 +133,12 @@ const callAnthropic = (
 const callOpenAI = (
   prompt: string,
   config: LLMConfig
-): Effect.Effect<string, LLMError | LLMConfigError> => {
-  return Effect.fail(
-    new LLMError("OpenAI provider not yet implemented. Use 'anthropic' provider.")
+): Effect.Effect<string, LLMError | LLMConfigError> =>
+  Effect.fail(
+    new LLMError(
+      "OpenAI provider not yet implemented. Use 'anthropic' provider."
+    )
   );
-};
 
 /**
  * Call local LLM (placeholder for future implementation)
@@ -134,11 +146,12 @@ const callOpenAI = (
 const callLocal = (
   prompt: string,
   config: LLMConfig
-): Effect.Effect<string, LLMError> => {
-  return Effect.fail(
-    new LLMError("Local LLM provider not yet implemented. Use 'anthropic' provider.")
+): Effect.Effect<string, LLMError> =>
+  Effect.fail(
+    new LLMError(
+      "Local LLM provider not yet implemented. Use 'anthropic' provider."
+    )
   );
-};
 
 /**
  * Main LLM call function with provider routing
@@ -159,7 +172,9 @@ export const callLLM = (
         return yield* callLocal(prompt, fullConfig);
       case "none":
         return yield* Effect.fail(
-          new LLMConfigError("LLM provider set to 'none'. Cannot generate pattern.")
+          new LLMConfigError(
+            "LLM provider set to 'none'. Cannot generate pattern."
+          )
         );
       default:
         return yield* Effect.fail(
@@ -198,7 +213,7 @@ export const callLLMWithRetry = (
       if (error._tag === "LLMRateLimitError") {
         const delay = error.retryAfter
           ? error.retryAfter * 1000
-          : Math.pow(2, attempt) * 1000;
+          : 2 ** attempt * 1000;
 
         yield* Effect.sleep(delay);
         continue;
@@ -208,7 +223,7 @@ export const callLLMWithRetry = (
 
       // Exponential backoff for other errors
       if (attempt < maxRetries - 1) {
-        yield* Effect.sleep(Math.pow(2, attempt) * 1000);
+        yield* Effect.sleep(2 ** attempt * 1000);
       }
     }
 
@@ -221,9 +236,10 @@ export const callLLMWithRetry = (
 /**
  * Check if LLM is available (API key configured)
  */
-export const isLLMAvailable = (provider: LLMProvider = "anthropic"): Effect.Effect<boolean> => {
-  return Effect.gen(function* () {
+export const isLLMAvailable = (
+  provider: LLMProvider = "anthropic"
+): Effect.Effect<boolean> =>
+  Effect.gen(function* () {
     const result = yield* Effect.either(getApiKey(provider));
     return result._tag === "Right";
   });
-};

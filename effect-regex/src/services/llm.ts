@@ -8,21 +8,20 @@
  */
 
 import { Effect, Layer } from "effect";
-import { LLMService } from "./types.js";
-import {
-  callLLMWithRetry,
-  isLLMAvailable,
-  type LLMConfig,
-} from "../ai/llm-client.js";
 import { interpretRegexBuilderCode } from "../ai/interpreter.js";
-import { generateProposalPrompt, parseRegexBuilderCode } from "../ai/prompts.js";
+import { callLLMWithRetry, isLLMAvailable } from "../ai/llm-client.js";
+import {
+  generateProposalPrompt,
+  parseRegexBuilderCode,
+} from "../ai/prompts.js";
 import { RegexBuilder } from "../core/builder.js";
 import {
-  LLMError,
-  LLMConfigError,
-  LLMRateLimitError,
   CodeInterpreterError,
+  type LLMConfigError,
+  LLMError,
+  type LLMRateLimitError,
 } from "../errors/index.js";
+import { LLMService } from "./types.js";
 
 /**
  * Live implementation using real Anthropic/OpenAI/etc APIs

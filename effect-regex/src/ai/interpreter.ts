@@ -159,10 +159,7 @@ class Lexer {
 
   private readIdentifier(): string {
     let value = "";
-    while (
-      this.pos < this.code.length &&
-      /[a-zA-Z0-9_]/.test(this.peek())
-    ) {
+    while (this.pos < this.code.length && /[a-zA-Z0-9_]/.test(this.peek())) {
       value += this.advance();
     }
     return value;
@@ -417,10 +414,7 @@ class Parser {
     // Expect "RegexBuilder"
     const classToken = this.expect("IDENTIFIER");
     if (classToken.value !== "RegexBuilder") {
-      throw new CodeInterpreterError(
-        "Code must start with 'RegexBuilder'",
-        ""
-      );
+      throw new CodeInterpreterError("Code must start with 'RegexBuilder'", "");
     }
 
     // Parse initial static method call

@@ -1,5 +1,3 @@
-import { pipe } from "effect";
-
 /**
  * Core AST types for the regex builder
  */
@@ -80,7 +78,7 @@ export type Ast =
 // Constructor functions
 export const lit = (value: string): LitNode => ({
   type: "lit",
-  value: value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), // Escape regex specials
+  value: value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), // Escape regex specials
 });
 
 export const raw = (pattern: string): RawNode => ({
@@ -143,27 +141,38 @@ const emitNode = (node: AstNode, dialect: "js" | "re2" | "pcre"): string => {
     case "raw":
       return node.pattern;
     case "seq":
-      return node.children.map(child => emitNode(child, dialect)).join("");
+      return node.children.map((child) => emitNode(child, dialect)).join("");
     case "alt":
-      return node.children.map(child => emitNode(child, dialect)).join("|");
+      return node.children.map((child) => emitNode(child, dialect)).join("|");
     case "cls":
       return node.negated ? `[^${node.chars}]` : `[${node.chars}]`;
     case "group":
-      return node.name ? `(?<${node.name}>${emitNode(node.child, dialect)})` : `(${emitNode(node.child, dialect)})`;
+      return node.name
+        ? `(?<${node.name}>${emitNode(node.child, dialect)})`
+        : `(${emitNode(node.child, dialect)})`;
     case "noncap":
       return `(?:${emitNode(node.child, dialect)})`;
-    case "q":
-      const quantifier = node.max === null
-        ? node.min === 0 ? "*" : node.min === 1 ? "+" : `{${node.min},}`
-        : node.max === node.min
-        ? `{${node.min}}`
-        : `{${node.min},${node.max}}`;
+    case "q": {
+      const quantifier =
+        node.max === null
+          ? node.min === 0
+            ? "*"
+            : node.min === 1
+              ? "+"
+              : `{${node.min},}`
+          : node.max === node.min
+            ? `{${node.min}}`
+            : `{${node.min},${node.max}}`;
       return `${emitNode(node.child, dialect)}${quantifier}${node.lazy ? "?" : ""}`;
+    }
     case "anchor":
       switch (node.position) {
-        case "start": return "^";
-        case "end": return "$";
-        case "word": return "\\b";
+        case "start":
+          return "^";
+        case "end":
+          return "$";
+        case "word":
+          return "\\b";
       }
   }
 };

@@ -4,7 +4,14 @@ import type { Ast } from "./ast.js";
  * Explanation node for structured regex breakdown
  */
 export interface ExplanationNode {
-  readonly type: "literal" | "characterClass" | "group" | "quantifier" | "anchor" | "sequence" | "alternation";
+  readonly type:
+    | "literal"
+    | "characterClass"
+    | "group"
+    | "quantifier"
+    | "anchor"
+    | "sequence"
+    | "alternation";
   readonly description: string;
   readonly pattern: string;
   readonly children?: readonly ExplanationNode[];
@@ -39,7 +46,7 @@ export const explain = (ast: Ast, options: ExplainOptions): ExplanationNode => {
       case "lit":
         return {
           type: "literal",
-          description: `Matches the literal text "${node.value.replace(/\\/g, '\\\\')}"`,
+          description: `Matches the literal text "${node.value.replace(/\\/g, "\\\\")}"`,
           pattern: node.value,
         };
 
@@ -50,7 +57,7 @@ export const explain = (ast: Ast, options: ExplainOptions): ExplanationNode => {
           pattern: node.pattern,
         };
 
-      case "cls":
+      case "cls": {
         const chars = node.negated ? `[^${node.chars}]` : `[${node.chars}]`;
         const charDesc = node.negated ? "not in" : "in";
         return {
@@ -59,8 +66,9 @@ export const explain = (ast: Ast, options: ExplainOptions): ExplanationNode => {
           pattern: chars,
           notes: node.negated ? ["Negated character class"] : undefined,
         };
+      }
 
-      case "group":
+      case "group": {
         const groupDesc = node.name
           ? `Capturing group named "${node.name}"`
           : "Capturing group";
@@ -68,12 +76,15 @@ export const explain = (ast: Ast, options: ExplainOptions): ExplanationNode => {
         return {
           type: "group",
           description: groupDesc,
-          pattern: node.name ? `(?<${node.name}>${child.pattern})` : `(${child.pattern})`,
+          pattern: node.name
+            ? `(?<${node.name}>${child.pattern})`
+            : `(${child.pattern})`,
           children: [child],
           notes: node.name ? [`Captured as: ${node.name}`] : undefined,
         };
+      }
 
-      case "noncap":
+      case "noncap": {
         const noncapChild = explainNode(node.child, depth + 1);
         return {
           type: "group",
@@ -82,8 +93,9 @@ export const explain = (ast: Ast, options: ExplainOptions): ExplanationNode => {
           children: [noncapChild],
           notes: ["Does not create a capture group"],
         };
+      }
 
-      case "q":
+      case "q": {
         const quantifierDesc = getQuantifierDescription(node);
         const quantifierPattern = getQuantifierPattern(node);
         const qChild = explainNode(node.child, depth + 1);
@@ -92,10 +104,13 @@ export const explain = (ast: Ast, options: ExplainOptions): ExplanationNode => {
           description: quantifierDesc,
           pattern: `${qChild.pattern}${quantifierPattern}`,
           children: [qChild],
-          notes: node.lazy ? ["Lazy matching (prefers shorter matches)"] : undefined,
+          notes: node.lazy
+            ? ["Lazy matching (prefers shorter matches)"]
+            : undefined,
         };
+      }
 
-      case "anchor":
+      case "anchor": {
         const anchorDesc = getAnchorDescription(node);
         const anchorPattern = getAnchorPattern(node);
         return {
@@ -103,20 +118,26 @@ export const explain = (ast: Ast, options: ExplainOptions): ExplanationNode => {
           description: anchorDesc,
           pattern: anchorPattern,
         };
+      }
 
-      case "seq":
-        const seqChildren = node.children.map(child => explainNode(child, depth + 1));
-        const seqPattern = seqChildren.map(c => c.pattern).join("");
+      case "seq": {
+        const seqChildren = node.children.map((child) =>
+          explainNode(child, depth + 1)
+        );
+        const seqPattern = seqChildren.map((c) => c.pattern).join("");
         return {
           type: "sequence",
           description: `Sequence of ${node.children.length} elements`,
           pattern: seqPattern,
           children: seqChildren,
         };
+      }
 
-      case "alt":
-        const altChildren = node.children.map(child => explainNode(child, depth + 1));
-        const altPattern = altChildren.map(c => c.pattern).join("|");
+      case "alt": {
+        const altChildren = node.children.map((child) =>
+          explainNode(child, depth + 1)
+        );
+        const altPattern = altChildren.map((c) => c.pattern).join("|");
         return {
           type: "alternation",
           description: `Alternation: matches any of ${node.children.length} options`,
@@ -124,6 +145,7 @@ export const explain = (ast: Ast, options: ExplainOptions): ExplanationNode => {
           children: altChildren,
           notes: ["Tries options from left to right"],
         };
+      }
     }
   };
 
@@ -133,7 +155,10 @@ export const explain = (ast: Ast, options: ExplainOptions): ExplanationNode => {
 /**
  * Format explanation as human-readable text
  */
-export const formatExplanation = (node: ExplanationNode, indent = ""): string => {
+export const formatExplanation = (
+  node: ExplanationNode,
+  indent = ""
+): string => {
   const lines: string[] = [];
 
   lines.push(`${indent}${node.description}`);
@@ -185,16 +210,22 @@ const getQuantifierPattern = (node: Ast & { type: "q" }): string => {
 
 const getAnchorDescription = (node: Ast & { type: "anchor" }): string => {
   switch (node.position) {
-    case "start": return "Start of string anchor";
-    case "end": return "End of string anchor";
-    case "word": return "Word boundary anchor";
+    case "start":
+      return "Start of string anchor";
+    case "end":
+      return "End of string anchor";
+    case "word":
+      return "Word boundary anchor";
   }
 };
 
 const getAnchorPattern = (node: Ast & { type: "anchor" }): string => {
   switch (node.position) {
-    case "start": return "^";
-    case "end": return "$";
-    case "word": return "\\b";
+    case "start":
+      return "^";
+    case "end":
+      return "$";
+    case "word":
+      return "\\b";
   }
 };

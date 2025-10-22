@@ -5,24 +5,24 @@
  * Services provide dependency injection and composable layers for core functionality.
  */
 
-import { Context, Effect } from "effect";
-import type { RegexBuilder, RegexPattern } from "../core/builder.js";
-import type { LintResult } from "../core/linter.js";
-import type { TestResult, RegexTestCase } from "../core/tester.js";
-import type {
-  OptimizationResult,
-  OptimizationOptions,
-} from "../core/optimizer.js";
-import type { Ast } from "../core/ast.js";
+import { Context, type Effect } from "effect";
 import type { LLMConfig, LLMProvider } from "../ai/llm-client.js";
 import type { PatternProposal } from "../ai/toolkit.js";
+import type { Ast } from "../core/ast.js";
+import type { RegexBuilder, RegexPattern } from "../core/builder.js";
+import type { LintResult } from "../core/linter.js";
 import type {
-  EmitError,
-  TestExecutionError,
-  LLMError,
-  LLMConfigError,
-  LLMRateLimitError,
+  OptimizationOptions,
+  OptimizationResult,
+} from "../core/optimizer.js";
+import type { RegexTestCase, TestResult } from "../core/tester.js";
+import type {
   CodeInterpreterError,
+  EmitError,
+  LLMConfigError,
+  LLMError,
+  LLMRateLimitError,
+  TestExecutionError,
 } from "../errors/index.js";
 
 /**
@@ -118,7 +118,9 @@ export interface LLMService {
 /**
  * Context tag for LLMService
  */
-export const LLMService = Context.GenericTag<LLMService>("@services/LLMService");
+export const LLMService = Context.GenericTag<LLMService>(
+  "@services/LLMService"
+);
 
 /**
  * Service for pattern validation and testing

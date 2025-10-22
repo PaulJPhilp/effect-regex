@@ -4,7 +4,6 @@
  */
 
 import { describe, expect, it } from "@effect/vitest";
-import { Effect } from "effect";
 import type { Ast as RegexAST } from "../src/core/ast.js";
 import { emit, RegexBuilder } from "../src/core/builder.js";
 import { optimize, optimizeWithPass } from "../src/core/optimizer.js";

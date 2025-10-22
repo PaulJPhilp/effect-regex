@@ -2,8 +2,6 @@
  * Prompt engineering for LLM-based pattern generation
  */
 
-import type { RegexTestCase } from "../core/tester.js";
-
 /**
  * Generate a prompt for initial pattern proposal
  */
@@ -11,8 +9,7 @@ export const generateProposalPrompt = (
   positiveExamples: readonly string[],
   negativeExamples: readonly string[],
   context?: string
-): string => {
-  return `You are a regex pattern expert using the effect-regex library. Your task is to generate a regex pattern using the RegexBuilder API that matches the given examples.
+): string => `You are a regex pattern expert using the effect-regex library. Your task is to generate a regex pattern using the RegexBuilder API that matches the given examples.
 
 ## RegexBuilder API
 
@@ -61,17 +58,29 @@ RegexBuilder.alt(a, b, c)          // Multiple alternatives
 ## Task
 
 Generate a RegexBuilder expression that:
-${positiveExamples.length > 0 ? `
+${
+  positiveExamples.length > 0
+    ? `
 **MUST MATCH** these examples:
 ${positiveExamples.map((ex, i) => `  ${i + 1}. "${ex}"`).join("\n")}
-` : ""}
-${negativeExamples.length > 0 ? `
+`
+    : ""
+}
+${
+  negativeExamples.length > 0
+    ? `
 **MUST NOT MATCH** these examples:
 ${negativeExamples.map((ex, i) => `  ${i + 1}. "${ex}"`).join("\n")}
-` : ""}
-${context ? `
+`
+    : ""
+}
+${
+  context
+    ? `
 **Context**: ${context}
-` : ""}
+`
+    : ""
+}
 
 ## Requirements
 
@@ -97,7 +106,6 @@ RegexBuilder
 \`\`\`
 
 Generate the pattern now:`;
-};
 
 /**
  * Generate a prompt for pattern refinement
@@ -110,8 +118,7 @@ export const generateRefinementPrompt = (
     actuallyMatched: boolean;
   }[],
   reasoning: string
-): string => {
-  return `You previously generated this regex pattern:
+): string => `You previously generated this regex pattern:
 
 \`\`\`typescript
 ${currentPattern}
@@ -121,13 +128,19 @@ With reasoning: "${reasoning}"
 
 However, it failed these test cases:
 
-${failedTests.map((test, i) => `
+${failedTests
+  .map(
+    (test, i) => `
 ${i + 1}. Input: "${test.input}"
    Expected: ${test.shouldMatch ? "MATCH" : "NO MATCH"}
    Actual: ${test.actuallyMatched ? "MATCHED" : "NO MATCH"}
-   Issue: ${test.shouldMatch && !test.actuallyMatched
-     ? "Pattern is too restrictive - should match but doesn't"
-     : "Pattern is too permissive - shouldn't match but does"}`).join("\n")}
+   Issue: ${
+     test.shouldMatch && !test.actuallyMatched
+       ? "Pattern is too restrictive - should match but doesn't"
+       : "Pattern is too permissive - shouldn't match but does"
+   }`
+  )
+  .join("\n")}
 
 ## Task
 
@@ -142,14 +155,15 @@ Refine the pattern to fix these failures while maintaining correctness for previ
 5. Return ONLY the refined RegexBuilder code, no explanation
 
 Generate the refined pattern:`;
-};
 
 /**
  * Parse LLM response to extract RegexBuilder code
  */
 export const parseRegexBuilderCode = (response: string): string | null => {
   // Try to extract code from markdown code blocks
-  const codeBlockMatch = response.match(/\`\`\`(?:typescript|ts)?\s*([\s\S]*?)\`\`\`/);
+  const codeBlockMatch = response.match(
+    /```(?:typescript|ts)?\s*([\s\S]*?)```/
+  );
   if (codeBlockMatch) {
     return codeBlockMatch[1].trim();
   }
@@ -184,13 +198,32 @@ export const validateRegexBuilderCode = (code: string): boolean => {
 
   // Check for proper method calls
   const validMethods = [
-    "lit", "raw", "digit", "word", "whitespace", "any", "charClass",
-    "then", "or", "alt",
-    "zeroOrMore", "oneOrMore", "optional", "exactly", "atLeast", "between",
-    "capture", "group",
-    "startOfLine", "endOfLine", "wordBoundary"
+    "lit",
+    "raw",
+    "digit",
+    "word",
+    "whitespace",
+    "any",
+    "charClass",
+    "then",
+    "or",
+    "alt",
+    "zeroOrMore",
+    "oneOrMore",
+    "optional",
+    "exactly",
+    "atLeast",
+    "between",
+    "capture",
+    "group",
+    "startOfLine",
+    "endOfLine",
+    "wordBoundary",
   ];
 
   // At least one valid method should be present
-  return validMethods.some(method => code.includes(`.${method}(`) || code.includes(`RegexBuilder.${method}(`));
+  return validMethods.some(
+    (method) =>
+      code.includes(`.${method}(`) || code.includes(`RegexBuilder.${method}(`)
+  );
 };

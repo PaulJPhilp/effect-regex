@@ -1,5 +1,5 @@
-import { describe, it, expect } from "@effect/vitest";
-import { RegexBuilder, emit } from "../src/core/builder.js";
+import { describe, expect, it } from "@effect/vitest";
+import { emit, RegexBuilder } from "../src/core/builder.js";
 import { STANDARD_PATTERNS } from "../src/std/patterns.js";
 
 describe("Core Builder", () => {
@@ -88,7 +88,11 @@ describe("Standard Library", () => {
     const result = emit(pattern, "re2"); // Test with RE2 to get dialect notes
 
     expect(result.pattern).toBeDefined();
-    expect(result.notes).toContain("No named groups", "No lookbehind", "No backreferences");
+    expect(result.notes).toContain(
+      "No named groups",
+      "No lookbehind",
+      "No backreferences"
+    );
   });
 
   it("should emit integer pattern", () => {
@@ -121,6 +125,8 @@ describe("Dialect Support", () => {
     const result = emit(builder, "re2");
 
     expect(result.pattern).toBe("(test)");
-    expect(result.notes).toContain("Named group \"name\" downgraded to numbered group 1 for RE2");
+    expect(result.notes).toContain(
+      'Named group "name" downgraded to numbered group 1 for RE2'
+    );
   });
 });

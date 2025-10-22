@@ -7,20 +7,17 @@ import {
   testRegex,
 } from "../core/tester.js";
 import {
+  CodeInterpreterError,
+  interpretRegexBuilderCode,
+} from "./interpreter.js";
+import {
   callLLMWithRetry,
   isLLMAvailable,
   type LLMConfig,
   type LLMConfigError,
   LLMError,
 } from "./llm-client.js";
-import {
-  generateProposalPrompt,
-  parseRegexBuilderCode,
-} from "./prompts.js";
-import {
-  interpretRegexBuilderCode,
-  CodeInterpreterError,
-} from "./interpreter.js";
+import { generateProposalPrompt, parseRegexBuilderCode } from "./prompts.js";
 
 /**
  * AI Toolkit for regex pattern development
@@ -73,9 +70,7 @@ export const proposePatternWithLLM = (
     const code = parseRegexBuilderCode(response);
     if (!code) {
       return yield* Effect.fail(
-        new LLMError(
-          "Failed to parse RegexBuilder code from LLM response"
-        )
+        new LLMError("Failed to parse RegexBuilder code from LLM response")
       );
     }
 

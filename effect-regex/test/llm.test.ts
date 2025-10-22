@@ -3,20 +3,20 @@
  * Tests for AI-powered pattern generation using Anthropic Claude API
  */
 
-import { describe, it, expect } from "@effect/vitest";
+import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import {
   callLLM,
   callLLMWithRetry,
   isLLMAvailable,
-  LLMError,
+  type LLMConfig,
   LLMConfigError,
-  type LLMConfig
+  LLMError,
 } from "../src/ai/llm-client.js";
 import {
-  proposePatternWithLLM,
+  proposePattern,
   proposePatternHeuristic,
-  proposePattern
+  proposePatternWithLLM,
 } from "../src/ai/toolkit.js";
 import { emit } from "../src/core/builder.js";
 
@@ -81,7 +81,7 @@ describe("Heuristic Pattern Generation", () => {
     const result = await Effect.runPromise(
       proposePatternHeuristic(
         ['"hello"', '"world"', '"test 123"'],
-        ['hello', 'world'],
+        ["hello", "world"],
         "quoted strings"
       )
     );
@@ -149,11 +149,7 @@ describe("Smart Pattern Proposal", () => {
     delete process.env.ANTHROPIC_API_KEY;
 
     const result = await Effect.runPromise(
-      proposePattern(
-        ["hello", "world"],
-        ["123", "456"],
-        "words"
-      )
+      proposePattern(["hello", "world"], ["123", "456"], "words")
     );
 
     // Restore env
@@ -178,14 +174,14 @@ describe("Smart Pattern Proposal", () => {
     expect(result.testCases.length).toBe(4); // 2 + 2
 
     // Check positive test cases
-    const positiveTests = result.testCases.filter(tc => tc.shouldMatch);
+    const positiveTests = result.testCases.filter((tc) => tc.shouldMatch);
     expect(positiveTests.length).toBe(2);
-    expect(positiveTests.map(tc => tc.input)).toEqual(positiveExamples);
+    expect(positiveTests.map((tc) => tc.input)).toEqual(positiveExamples);
 
     // Check negative test cases
-    const negativeTests = result.testCases.filter(tc => !tc.shouldMatch);
+    const negativeTests = result.testCases.filter((tc) => !tc.shouldMatch);
     expect(negativeTests.length).toBe(2);
-    expect(negativeTests.map(tc => tc.input)).toEqual(negativeExamples);
+    expect(negativeTests.map((tc) => tc.input)).toEqual(negativeExamples);
   });
 });
 
@@ -237,9 +233,13 @@ describe.skip("LLM Pattern Generation (requires API key)", () => {
   it("should retry on transient errors", async () => {
     const result = await Effect.runPromise(
       Effect.either(
-        callLLMWithRetry("Generate a regex for matching email addresses", {
-          provider: "anthropic"
-        }, 2)
+        callLLMWithRetry(
+          "Generate a regex for matching email addresses",
+          {
+            provider: "anthropic",
+          },
+          2
+        )
       )
     );
 
@@ -250,8 +250,7 @@ describe.skip("LLM Pattern Generation (requires API key)", () => {
     } else {
       // If it failed, should be a proper error
       expect(
-        result.left instanceof LLMError ||
-        result.left instanceof LLMConfigError
+        result.left instanceof LLMError || result.left instanceof LLMConfigError
       ).toBe(true);
     }
   });

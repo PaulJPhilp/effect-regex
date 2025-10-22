@@ -7,15 +7,15 @@
 
 import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
+import { RegexBuilder } from "../src/core/builder.js";
 import {
-  RegexBuilderService,
-  RegexBuilderServiceLive,
   LLMService,
   LLMServiceMock,
+  RegexBuilderService,
+  RegexBuilderServiceLive,
   ValidationService,
   ValidationServiceLive,
 } from "../src/services/index.js";
-import { RegexBuilder } from "../src/core/builder.js";
 
 describe("Service Layer", () => {
   describe("RegexBuilderService", () => {
@@ -109,9 +109,9 @@ describe("Service Layer", () => {
         return response.includes("RegexBuilder");
       });
 
-      expect(
-        program.pipe(Effect.provide(LLMServiceMock), Effect.runSync)
-      ).toBe(true);
+      expect(program.pipe(Effect.provide(LLMServiceMock), Effect.runSync)).toBe(
+        true
+      );
     });
 
     it("should check LLM availability through service (mocked)", () => {
@@ -121,9 +121,9 @@ describe("Service Layer", () => {
         return available;
       });
 
-      expect(
-        program.pipe(Effect.provide(LLMServiceMock), Effect.runSync)
-      ).toBe(true);
+      expect(program.pipe(Effect.provide(LLMServiceMock), Effect.runSync)).toBe(
+        true
+      );
     });
 
     it("should propose patterns through service (mocked)", () => {
@@ -157,14 +157,10 @@ describe("Service Layer", () => {
         const emitted = yield* regexService.emit(pattern, "js");
 
         // Test it
-        const tested = yield* validationService.test(
-          emitted.pattern,
-          "js",
-          [
-            { input: "123", shouldMatch: true },
-            { input: "abc", shouldMatch: false },
-          ]
-        );
+        const tested = yield* validationService.test(emitted.pattern, "js", [
+          { input: "123", shouldMatch: true },
+          { input: "abc", shouldMatch: false },
+        ]);
 
         return tested.passed === 2;
       });

@@ -1,8 +1,6 @@
 {
   "compilerOptions": {
-    "lib": [
-      "ESNext"
-    ],
+    "lib": ["ESNext"],
     "target": "ESNext",
     "module": "Preserve",
     "moduleDetection": "force",
@@ -22,8 +20,5 @@
     "noPropertyAccessFromIndexSignature": false,
     "strictNullChecks": true
   },
-  "exclude": [
-    "effect-patterns-repo/**",
-    "node_modules"
-  ]
+  "exclude": ["effect-patterns-repo/**", "node_modules"]
 }

@@ -104,9 +104,10 @@ export const testRegex = (
 
         // Check for timeout warnings
         if (durationMs > timeoutMs * 0.8) {
-          warnings.push(`Test case ${i} took ${durationMs}ms (close to ${timeoutMs}ms timeout)`);
+          warnings.push(
+            `Test case ${i} took ${durationMs}ms (close to ${timeoutMs}ms timeout)`
+          );
         }
-
       } catch (error) {
         const durationMs = Date.now() - caseStartTime;
         if ((error as Error).message === "TIMEOUT") {
@@ -133,9 +134,9 @@ export const testRegex = (
       }
     }
 
-    const passed = results.filter(r => r.passed).length;
+    const passed = results.filter((r) => r.passed).length;
     const failed = results.length - passed;
-    const failures = results.filter(r => !r.passed);
+    const failures = results.filter((r) => !r.passed);
 
     return {
       total: cases.length,
@@ -193,7 +194,10 @@ const runTestCase = async (
     }
 
     // Check if captures match expectations
-    const capturesMatch = checkCapturesMatch(captures, testCase.expectedCaptures);
+    const capturesMatch = checkCapturesMatch(
+      captures,
+      testCase.expectedCaptures
+    );
 
     return {
       passed: capturesMatch,
@@ -225,16 +229,17 @@ const checkCapturesMatch = (
     }
 
     if (Array.isArray(expectedValue)) {
-      if (!Array.isArray(actualValue) || actualValue.length !== expectedValue.length) {
+      if (
+        !Array.isArray(actualValue) ||
+        actualValue.length !== expectedValue.length
+      ) {
         return false;
       }
       if (!expectedValue.every((val, idx) => val === actualValue[idx])) {
         return false;
       }
-    } else {
-      if (actualValue !== expectedValue) {
-        return false;
-      }
+    } else if (actualValue !== expectedValue) {
+      return false;
     }
   }
 
@@ -260,24 +265,26 @@ export const runCorpora = async (
 const validateTestCase = (testCase: RegexTestCase): string[] => {
   const errors: string[] = [];
 
-  if (!testCase.input || typeof testCase.input !== 'string') {
-    errors.push('Test case must have a valid input string');
+  if (!testCase.input || typeof testCase.input !== "string") {
+    errors.push("Test case must have a valid input string");
   }
 
-  if (typeof testCase.shouldMatch !== 'boolean') {
-    errors.push('Test case must specify shouldMatch as boolean');
+  if (typeof testCase.shouldMatch !== "boolean") {
+    errors.push("Test case must specify shouldMatch as boolean");
   }
 
   if (testCase.expectedCaptures) {
     for (const [key, value] of Object.entries(testCase.expectedCaptures)) {
-      if (typeof key !== 'string') {
+      if (typeof key !== "string") {
         errors.push(`Capture key must be a string, got: ${typeof key}`);
       }
-      if (typeof value !== 'string' && !Array.isArray(value)) {
-        errors.push(`Capture value must be string or string array, got: ${typeof value}`);
+      if (typeof value !== "string" && !Array.isArray(value)) {
+        errors.push(
+          `Capture value must be string or string array, got: ${typeof value}`
+        );
       }
-      if (Array.isArray(value) && !value.every(v => typeof v === 'string')) {
-        errors.push('Capture array values must all be strings');
+      if (Array.isArray(value) && !value.every((v) => typeof v === "string")) {
+        errors.push("Capture array values must all be strings");
       }
     }
   }

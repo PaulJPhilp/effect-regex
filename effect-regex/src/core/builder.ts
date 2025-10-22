@@ -1,26 +1,6 @@
-import { pipe } from "effect";
 import type { Ast } from "./ast.js";
+import { alt, anchor, cls, group, lit, noncap, q, raw, seq } from "./ast.js";
 import { emit as emitPattern } from "./emitter.js";
-import {
-  lit,
-  raw,
-  seq,
-  alt,
-  cls,
-  group,
-  noncap,
-  q,
-  anchor,
-  type LitNode,
-  type RawNode,
-  type SeqNode,
-  type AltNode,
-  type CharClassNode,
-  type GroupNode,
-  type NonCapNode,
-  type QuantifierNode,
-  type AnchorNode
-} from "./ast.js";
 
 /**
  * Fluent builder for regex patterns
@@ -58,7 +38,9 @@ export class RegexBuilder {
 
   // Static alternation method
   static alt(...builders: (string | RegexBuilder)[]): RegexBuilder {
-    const asts = builders.map(b => typeof b === "string" ? RegexBuilder.lit(b).ast : b.ast);
+    const asts = builders.map((b) =>
+      typeof b === "string" ? RegexBuilder.lit(b).ast : b.ast
+    );
     return new RegexBuilder(alt(...asts));
   }
 
@@ -165,6 +147,8 @@ export interface RegexPattern {
 /**
  * Emit the regex pattern with dialect support
  */
-export const emit = (builder: RegexBuilder, dialect: "js" | "re2" | "pcre" = "js", anchor = false): RegexPattern => {
-  return emitPattern(builder, dialect, anchor);
-};
+export const emit = (
+  builder: RegexBuilder,
+  dialect: "js" | "re2" | "pcre" = "js",
+  anchor = false
+): RegexPattern => emitPattern(builder, dialect, anchor);

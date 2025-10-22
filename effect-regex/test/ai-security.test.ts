@@ -114,9 +114,7 @@ describe("AI Code Interpreter Security", () => {
     });
 
     it("should reject empty code", () => {
-      expect(() => interpretRegexBuilderCode("")).toThrow(
-        CodeInterpreterError
-      );
+      expect(() => interpretRegexBuilderCode("")).toThrow(CodeInterpreterError);
     });
 
     it("should reject code with only whitespace", () => {
@@ -214,7 +212,7 @@ describe("AI Code Interpreter Security", () => {
     });
 
     it("should accept between quantifier", () => {
-      const valid = 'RegexBuilder.digit().between(2, 4)';
+      const valid = "RegexBuilder.digit().between(2, 4)";
       const result = interpretRegexBuilderCode(valid);
 
       expect(result).toBeInstanceOf(RegexBuilder);
@@ -235,7 +233,7 @@ describe("AI Code Interpreter Security", () => {
     });
 
     it("should accept lazy quantifiers", () => {
-      const valid = 'RegexBuilder.any().zeroOrMore(true)';
+      const valid = "RegexBuilder.any().zeroOrMore(true)";
       const result = interpretRegexBuilderCode(valid);
 
       expect(result).toBeInstanceOf(RegexBuilder);
@@ -279,9 +277,7 @@ describe("AI Code Interpreter Security", () => {
       expect(() => interpretRegexBuilderCode(tooDeep)).toThrow(
         CodeInterpreterError
       );
-      expect(() => interpretRegexBuilderCode(tooDeep)).toThrow(
-        /maximum depth/
-      );
+      expect(() => interpretRegexBuilderCode(tooDeep)).toThrow(/maximum depth/);
     });
 
     it("should reject code exceeding size limit", () => {
@@ -290,9 +286,7 @@ describe("AI Code Interpreter Security", () => {
       expect(() => interpretRegexBuilderCode(huge)).toThrow(
         CodeInterpreterError
       );
-      expect(() => interpretRegexBuilderCode(huge)).toThrow(
-        /maximum length/
-      );
+      expect(() => interpretRegexBuilderCode(huge)).toThrow(/maximum length/);
     });
 
     it("should handle code with many arguments", () => {

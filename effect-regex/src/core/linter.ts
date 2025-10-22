@@ -30,7 +30,10 @@ export interface LintResult {
 /**
  * Dialect-specific linting rules
  */
-const DIALECT_RULES: Record<Dialect, ReadonlyArray<(ast: Ast) => LintIssue | null>> = {
+const DIALECT_RULES: Record<
+  Dialect,
+  ReadonlyArray<(ast: Ast) => LintIssue | null>
+> = {
   js: [
     // JS-specific rules can go here
   ],
@@ -97,7 +100,8 @@ const GENERAL_RULES: ReadonlyArray<(ast: Ast) => LintIssue | null> = [
         return {
           code: "CAT_BACKTRACK",
           severity: "warning",
-          message: "Potential catastrophic backtracking detected. Consider using atomic groups or possessive quantifiers.",
+          message:
+            "Potential catastrophic backtracking detected. Consider using atomic groups or possessive quantifiers.",
         };
       }
     }
@@ -107,8 +111,8 @@ const GENERAL_RULES: ReadonlyArray<(ast: Ast) => LintIssue | null> = [
   // Check for empty alternatives
   (node): LintIssue | null => {
     if (node.type === "alt") {
-      const emptyAlts = node.children.filter(child =>
-        child.type === "lit" && child.value === ""
+      const emptyAlts = node.children.filter(
+        (child) => child.type === "lit" && child.value === ""
       );
       if (emptyAlts.length > 0) {
         return {
@@ -184,7 +188,7 @@ export const lint = (ast: Ast, dialect: Dialect): LintResult => {
 
   lintChildren(ast);
 
-  const hasErrors = issues.some(issue => issue.severity === "error");
+  const hasErrors = issues.some((issue) => issue.severity === "error");
 
   return {
     valid: !hasErrors,
@@ -204,16 +208,25 @@ const estimateComplexity = (node: Ast): number => {
     case "cls":
       return 10; // Character classes are moderately complex
     case "seq":
-      return node.children.reduce((sum, child) => sum + estimateComplexity(child), 0);
+      return node.children.reduce(
+        (sum, child) => sum + estimateComplexity(child),
+        0
+      );
     case "alt":
-      return node.children.reduce((sum, child) => sum + estimateComplexity(child), node.children.length * 5);
+      return node.children.reduce(
+        (sum, child) => sum + estimateComplexity(child),
+        node.children.length * 5
+      );
     case "group":
     case "noncap":
       return estimateComplexity(node.child) + 2;
-    case "q":
+    case "q": {
       // Quantifiers add exponential complexity
       const childComplexity = estimateComplexity(node.child);
-      return node.max === null ? childComplexity * 10 : childComplexity * (node.max - node.min + 1);
+      return node.max === null
+        ? childComplexity * 10
+        : childComplexity * (node.max - node.min + 1);
+    }
     case "anchor":
       return 1;
     default:

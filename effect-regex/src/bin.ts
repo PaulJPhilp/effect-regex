@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import { Effect } from "effect";
 // Simple CLI for M1/M2 - will upgrade to Effect CLI later
 import { emit, RegexBuilder } from "./core/builder.js";
 import { optimize } from "./core/optimizer.js";

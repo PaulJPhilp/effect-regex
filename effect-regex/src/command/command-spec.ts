@@ -55,7 +55,9 @@ export const buildCommandRegex = (
   // Build subcommand pattern (must come first)
   let subcommandPattern = "";
   if (spec.subcommands && spec.subcommands.length > 0) {
-    const subcommandAlts = spec.subcommands.map(cmd => `\\b${cmd}\\b`).join("|");
+    const subcommandAlts = spec.subcommands
+      .map((cmd) => `\\b${cmd}\\b`)
+      .join("|");
     subcommandPattern = `(${subcommandAlts})`;
     captureMap.subcommand = ++groupCount;
   }
@@ -83,7 +85,9 @@ export const buildCommandRegex = (
         // For repeatable flags, we need array capture map
         const existing = captureMap[`flag_${flag.name}`];
         if (existing) {
-          captureMap[`flag_${flag.name}`] = Array.isArray(existing) ? existing : [existing, ++groupCount];
+          captureMap[`flag_${flag.name}`] = Array.isArray(existing)
+            ? existing
+            : [existing, ++groupCount];
         } else {
           captureMap[`flag_${flag.name}`] = ++groupCount;
         }
@@ -125,7 +129,9 @@ export const buildCommandRegex = (
         // For repeatable options, array capture map
         const existing = captureMap[`opt_${option.key}_value`];
         if (existing) {
-          captureMap[`opt_${option.key}_value`] = Array.isArray(existing) ? existing : [existing];
+          captureMap[`opt_${option.key}_value`] = Array.isArray(existing)
+            ? existing
+            : [existing];
         }
       }
 
@@ -156,7 +162,9 @@ export const buildCommandRegex = (
         // Array capture for repeatable positionals
         const existing = captureMap[`pos_${positional.name}`];
         if (existing) {
-          captureMap[`pos_${positional.name}`] = Array.isArray(existing) ? existing : [existing];
+          captureMap[`pos_${positional.name}`] = Array.isArray(existing)
+            ? existing
+            : [existing];
         }
       }
 
@@ -171,7 +179,8 @@ export const buildCommandRegex = (
   if (spec.allowInterleaving) {
     // With interleaving, flags and options can appear in any order before positionals
     const optionalParts = [...flagParts, ...optionParts];
-    const interleavedOptionals = optionalParts.length > 0 ? `(?:${optionalParts.join("\\s+|")}\\s*)*` : "";
+    const interleavedOptionals =
+      optionalParts.length > 0 ? `(?:${optionalParts.join("\\s+|")}\\s*)*` : "";
 
     if (positionalPatterns.length > 0) {
       combinedPattern = `${subcommandPattern}\\s+${interleavedOptionals}${positionalPatterns.join("\\s+")}`;
@@ -184,7 +193,7 @@ export const buildCommandRegex = (
       subcommandPattern,
       ...flagParts,
       ...optionParts,
-      ...positionalPatterns
+      ...positionalPatterns,
     ].filter(Boolean);
 
     combinedPattern = allParts.join("\\s+");
@@ -193,14 +202,16 @@ export const buildCommandRegex = (
   // Clean up and optimize the pattern
   const finalPattern = combinedPattern
     // Remove unnecessary non-capturing groups
-    .replace(/\(\?:([^)]*)\)\?/g, '(?:$1)?') // Simplify optional non-capturing groups
+    .replace(/\(\?:([^)]*)\)\?/g, "(?:$1)?") // Simplify optional non-capturing groups
     // Add word boundaries
-    .replace(/^/, '\\b')
-    .replace(/$/, '\\b');
+    .replace(/^/, "\\b")
+    .replace(/$/, "\\b");
 
   // Add notes about limitations and features
   if (!spec.allowInterleaving) {
-    notes.push("Strict argument ordering enforced - flags and options must appear before positionals");
+    notes.push(
+      "Strict argument ordering enforced - flags and options must appear before positionals"
+    );
   }
 
   if (dialect === "re2") {

@@ -1,6 +1,5 @@
-import { describe, it, expect } from "@effect/vitest";
+import { describe, expect, it } from "@effect/vitest";
 import { spawn } from "child_process";
-import { Readable, Writable } from "stream";
 
 // MCP protocol message types
 interface MCPMessage {
@@ -20,12 +19,15 @@ interface MCPResponse {
 class MCPClient {
   private process: any;
   private messageId = 1;
-  private responsePromises = new Map<number, { resolve: Function; reject: Function }>();
+  private responsePromises = new Map<
+    number,
+    { resolve: Function; reject: Function }
+  >();
 
   constructor() {
     this.process = spawn("node", ["dist/server.cjs"], {
       stdio: ["pipe", "pipe", "pipe"],
-      cwd: process.cwd()
+      cwd: process.cwd(),
     });
 
     // Set up response handling
@@ -67,7 +69,7 @@ class MCPClient {
         jsonrpc: "2.0",
         id,
         method,
-        params
+        params,
       };
 
       this.responsePromises.set(id, { resolve, reject });
@@ -121,10 +123,10 @@ describe("MCP Server E2E", () => {
       arguments: {
         input: {
           type: "std",
-          name: "quotedString"
+          name: "quotedString",
         },
-        dialect: "js"
-      }
+        dialect: "js",
+      },
     });
 
     expect(result).toHaveProperty("content");
@@ -145,10 +147,10 @@ describe("MCP Server E2E", () => {
         dialect: "js",
         cases: [
           { input: "hello", shouldMatch: true },
-          { input: "123", shouldMatch: false }
+          { input: "123", shouldMatch: false },
         ],
-        timeoutMs: 100
-      }
+        timeoutMs: 100,
+      },
     });
 
     expect(result).toHaveProperty("content");
@@ -164,8 +166,8 @@ describe("MCP Server E2E", () => {
       name: "lint_regex",
       arguments: {
         pattern: "[a-z]+",
-        dialect: "js"
-      }
+        dialect: "js",
+      },
     });
 
     expect(result).toHaveProperty("content");
@@ -177,7 +179,7 @@ describe("MCP Server E2E", () => {
   it("should list library patterns", async () => {
     const result = await client.sendMessage("tools/call", {
       name: "library_list",
-      arguments: {}
+      arguments: {},
     });
 
     expect(result).toHaveProperty("content");
@@ -191,14 +193,14 @@ describe("MCP Server E2E", () => {
     await expect(
       client.sendMessage("tools/call", {
         name: "nonexistent_tool",
-        arguments: {}
+        arguments: {},
       })
     ).rejects.toThrow();
   });
 
   it("should validate input parameters", async () => {
     // Test with oversized input
-    const largePattern = "x".repeat(25000);
+    const largePattern = "x".repeat(25_000);
 
     await expect(
       client.sendMessage("tools/call", {
@@ -206,9 +208,9 @@ describe("MCP Server E2E", () => {
         arguments: {
           input: {
             type: "std",
-            name: largePattern // Invalid name, too long
-          }
-        }
+            name: largePattern, // Invalid name, too long
+          },
+        },
       })
     ).rejects.toThrow();
   });
@@ -220,10 +222,10 @@ describe("MCP Server E2E", () => {
       arguments: {
         input: {
           type: "std",
-          name: "integer"
+          name: "integer",
         },
-        dialect: "js"
-      }
+        dialect: "js",
+      },
     });
 
     const buildResponse = JSON.parse(buildResult.content[0].text);
@@ -234,8 +236,8 @@ describe("MCP Server E2E", () => {
       arguments: {
         pattern: buildResponse.pattern,
         format: "tree",
-        dialect: "js"
-      }
+        dialect: "js",
+      },
     });
 
     expect(explainResult).toHaveProperty("content");
@@ -251,8 +253,8 @@ describe("MCP Server E2E", () => {
         positiveExamples: ["hello", "world", "test"],
         negativeExamples: ["123", "456"],
         maxIterations: 2,
-        dialect: "js"
-      }
+        dialect: "js",
+      },
     });
 
     expect(result).toHaveProperty("content");
@@ -270,16 +272,21 @@ describe("MCP Server E2E", () => {
       name: "library_list",
       arguments: {
         filter: {
-          search: "quoted"
-        }
-      }
+          search: "quoted",
+        },
+      },
     });
 
     expect(result).toHaveProperty("content");
     const response = JSON.parse(result.content[0].text);
     expect(response).toHaveProperty("patterns");
     expect(response.patterns.length).toBeGreaterThan(0);
-    expect(response.patterns.some((p: any) => p.name.includes("quoted") || p.description.includes("quoted"))).toBe(true);
+    expect(
+      response.patterns.some(
+        (p: any) =>
+          p.name.includes("quoted") || p.description.includes("quoted")
+      )
+    ).toBe(true);
   });
 
   it("should convert regex between dialects", async () => {
@@ -289,8 +296,8 @@ describe("MCP Server E2E", () => {
         pattern: "[a-z]+",
         fromDialect: "js",
         toDialect: "re2",
-        allowDowngrades: true
-      }
+        allowDowngrades: true,
+      },
     });
 
     expect(result).toHaveProperty("content");
@@ -313,15 +320,20 @@ describe("MCP Server E2E", () => {
             subcommands: ["commit", "push"],
             flags: [
               { name: "verbose", short: "v" },
-              { name: "all", short: "a" }
+              { name: "all", short: "a" },
             ],
             options: [
-              { key: "message", short: "m", valuePattern: "[^\\s]+", required: true }
-            ]
-          }
+              {
+                key: "message",
+                short: "m",
+                valuePattern: "[^\\s]+",
+                required: true,
+              },
+            ],
+          },
         },
-        dialect: "js"
-      }
+        dialect: "js",
+      },
     });
 
     expect(result).toHaveProperty("content");
@@ -340,11 +352,9 @@ describe("MCP Server E2E", () => {
       arguments: {
         pattern: evilPattern,
         dialect: "js",
-        cases: [
-          { input: "aaaaaaaaaaaaaaaaaaaaaa", shouldMatch: false }
-        ],
-        timeoutMs: 50
-      }
+        cases: [{ input: "aaaaaaaaaaaaaaaaaaaaaa", shouldMatch: false }],
+        timeoutMs: 50,
+      },
     });
 
     expect(result).toHaveProperty("content");
@@ -358,8 +368,8 @@ describe("MCP Server E2E", () => {
       name: "lint_regex",
       arguments: {
         pattern: "[invalid(regex",
-        dialect: "js"
-      }
+        dialect: "js",
+      },
     });
 
     expect(result).toHaveProperty("content");

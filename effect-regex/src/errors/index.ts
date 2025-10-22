@@ -4,17 +4,16 @@
  * Centralized export point for all error types.
  */
 
+export type { Dialect, RegexLibraryError } from "./types.js";
 export {
-  RegexCompilationError,
+  CodeInterpreterError,
+  DialectIncompatibilityError,
+  EmitError,
+  LLMConfigError,
+  LLMError,
+  LLMRateLimitError,
   OptimizationError,
+  RegexCompilationError,
   TestExecutionError,
   ValidationError,
-  DialectIncompatibilityError,
-  CodeInterpreterError,
-  EmitError,
-  LLMError,
-  LLMConfigError,
-  LLMRateLimitError,
 } from "./types.js";
-
-export type { Dialect, RegexLibraryError } from "./types.js";

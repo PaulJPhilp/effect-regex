@@ -1,4 +1,3 @@
-import { pipe } from "effect";
 import type { Ast } from "./ast.js";
 import type { RegexBuilder, RegexPattern } from "./builder.js";
 
@@ -20,7 +19,7 @@ const DIALECT_INFO: Record<Dialect, DialectInfo> = {
     supportsNamedGroups: true,
     supportsLookbehind: true,
     supportsBackrefs: true,
-    maxGroups: 10000, // Effectively unlimited for our purposes
+    maxGroups: 10_000, // Effectively unlimited for our purposes
     notes: [],
   },
   re2: {
@@ -34,7 +33,7 @@ const DIALECT_INFO: Record<Dialect, DialectInfo> = {
     supportsNamedGroups: true,
     supportsLookbehind: true,
     supportsBackrefs: true,
-    maxGroups: 65535,
+    maxGroups: 65_535,
     notes: [],
   },
 };
@@ -96,12 +95,17 @@ export const emit = (
 /**
  * Emit an AST node with state management
  */
-const emitAst = (node: Ast, state: EmitState): { result: EmitResult; newState: EmitState } => {
+const emitAst = (
+  node: Ast,
+  state: EmitState
+): { result: EmitResult; newState: EmitState } => {
   let currentState = state;
 
-  const processResult = (result: EmitResult): { result: EmitResult; newState: EmitState } => ({
+  const processResult = (
+    result: EmitResult
+  ): { result: EmitResult; newState: EmitState } => ({
     result,
-    newState: currentState
+    newState: currentState,
   });
 
   switch (node.type) {
@@ -126,9 +130,9 @@ const emitAst = (node: Ast, state: EmitState): { result: EmitResult; newState: E
         results.push(result);
         currentState = newState;
       }
-      const pattern = results.map(r => r.pattern).join("");
-      const captureMap = mergeCaptureMaps(results.map(r => r.captureMap));
-      const notes = results.flatMap(r => r.notes);
+      const pattern = results.map((r) => r.pattern).join("");
+      const captureMap = mergeCaptureMaps(results.map((r) => r.captureMap));
+      const notes = results.flatMap((r) => r.notes);
       return processResult({ pattern, captureMap, notes });
     }
 
@@ -140,9 +144,9 @@ const emitAst = (node: Ast, state: EmitState): { result: EmitResult; newState: E
         results.push(result);
         currentState = newState;
       }
-      const pattern = results.map(r => r.pattern).join("|");
-      const captureMap = mergeCaptureMaps(results.map(r => r.captureMap));
-      const notes = results.flatMap(r => r.notes);
+      const pattern = results.map((r) => r.pattern).join("|");
+      const captureMap = mergeCaptureMaps(results.map((r) => r.captureMap));
+      const notes = results.flatMap((r) => r.notes);
       return processResult({ pattern, captureMap, notes });
     }
 
@@ -154,13 +158,16 @@ const emitAst = (node: Ast, state: EmitState): { result: EmitResult; newState: E
       });
 
     case "group": {
-      const { result: childResult, newState } = emitAst(node.child, currentState);
+      const { result: childResult, newState } = emitAst(
+        node.child,
+        currentState
+      );
       currentState = newState;
       const groupIndex = currentState.groupCount + 1;
       currentState = { ...currentState, groupCount: groupIndex };
 
       let pattern: string;
-      let captureMap = { ...childResult.captureMap };
+      const captureMap = { ...childResult.captureMap };
 
       if (node.name) {
         if (DIALECT_INFO[currentState.dialect].supportsNamedGroups) {
@@ -172,7 +179,10 @@ const emitAst = (node: Ast, state: EmitState): { result: EmitResult; newState: E
           captureMap[node.name] = groupIndex;
           currentState = {
             ...currentState,
-            notes: [...currentState.notes, `Named group "${node.name}" downgraded to numbered group ${groupIndex} for ${currentState.dialect.toUpperCase()}`]
+            notes: [
+              ...currentState.notes,
+              `Named group "${node.name}" downgraded to numbered group ${groupIndex} for ${currentState.dialect.toUpperCase()}`,
+            ],
           };
         }
       } else {
@@ -187,7 +197,10 @@ const emitAst = (node: Ast, state: EmitState): { result: EmitResult; newState: E
     }
 
     case "noncap": {
-      const { result: childResult, newState } = emitAst(node.child, currentState);
+      const { result: childResult, newState } = emitAst(
+        node.child,
+        currentState
+      );
       currentState = newState;
       return processResult({
         pattern: `(?:${childResult.pattern})`,
@@ -197,13 +210,21 @@ const emitAst = (node: Ast, state: EmitState): { result: EmitResult; newState: E
     }
 
     case "q": {
-      const { result: childResult, newState } = emitAst(node.child, currentState);
+      const { result: childResult, newState } = emitAst(
+        node.child,
+        currentState
+      );
       currentState = newState;
-      const quantifier = node.max === null
-        ? node.min === 0 ? "*" : node.min === 1 ? "+" : `{${node.min},}`
-        : node.max === node.min
-        ? `{${node.min}}`
-        : `{${node.min},${node.max}}`;
+      const quantifier =
+        node.max === null
+          ? node.min === 0
+            ? "*"
+            : node.min === 1
+              ? "+"
+              : `{${node.min},}`
+          : node.max === node.min
+            ? `{${node.min}}`
+            : `{${node.min},${node.max}}`;
 
       const pattern = `${childResult.pattern}${quantifier}${node.lazy ? "?" : ""}`;
 
@@ -214,14 +235,15 @@ const emitAst = (node: Ast, state: EmitState): { result: EmitResult; newState: E
       });
     }
 
-    case "anchor":
-      const anchorChar = node.position === "start" ? "^" :
-                        node.position === "end" ? "$" : "\\b";
+    case "anchor": {
+      const anchorChar =
+        node.position === "start" ? "^" : node.position === "end" ? "$" : "\\b";
       return processResult({
         pattern: anchorChar,
         captureMap: {},
         notes: [],
       });
+    }
 
     default:
       throw new Error(`Unknown AST node type: ${(node as any).type}`);
@@ -231,7 +253,9 @@ const emitAst = (node: Ast, state: EmitState): { result: EmitResult; newState: E
 /**
  * Merge multiple capture maps
  */
-const mergeCaptureMaps = (maps: Record<string, number | number[]>[]): Record<string, number | number[]> => {
+const mergeCaptureMaps = (
+  maps: Record<string, number | number[]>[]
+): Record<string, number | number[]> => {
   const result: Record<string, number | number[]> = {};
 
   for (const map of maps) {

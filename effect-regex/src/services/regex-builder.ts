@@ -11,8 +11,8 @@ import { Effect, Layer } from "effect";
 import { emit as coreEmit } from "../core/emitter.js";
 import { lint as coreLint } from "../core/linter.js";
 import { optimize as coreOptimize } from "../core/optimizer.js";
-import { RegexBuilderService } from "./types.js";
 import { EmitError } from "../errors/index.js";
+import { RegexBuilderService } from "./types.js";
 
 /**
  * Live implementation of RegexBuilderService
