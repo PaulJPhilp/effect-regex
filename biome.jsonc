@@ -5,7 +5,9 @@
     "rules": {
       "suspicious": {
         "noConsole": "off",
-        "noExplicitAny": "off"
+        "noExplicitAny": "off",
+        "noThenProperty": "off",
+        "useIterableCallbackReturn": "off"
       },
       "style": {
         "noParameterProperties": "off",
@@ -21,10 +23,13 @@
         "noExcessiveCognitiveComplexity": "off"
       },
       "performance": {
-        "useTopLevelRegex": "off"
+        "useTopLevelRegex": "off",
+        "noBarrelFile": "off"
       },
       "correctness": {
-        "noUnusedFunctionParameters": "warn"
+        "noUnusedFunctionParameters": "off",
+        "noUnusedVariables": "warn",
+        "useParseIntRadix": "warn"
       }
     }
   }

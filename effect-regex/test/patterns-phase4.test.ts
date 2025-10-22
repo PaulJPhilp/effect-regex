@@ -7,13 +7,13 @@
  * 3. Maintain backward compatibility
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { emit } from "../src/core/builder.js";
 import {
-  uuidV4,
+  ipv6Compressed,
   isoDate,
   isoDateTime,
-  ipv6Compressed,
+  uuidV4,
 } from "../src/std/patterns.js";
 
 describe("Phase 4: Refactored Patterns", () => {

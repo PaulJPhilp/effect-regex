@@ -12,8 +12,6 @@ import { Effect } from "effect";
 import { developPattern } from "../ai/toolkit.js";
 import { buildCommandRegex } from "../command/command-spec.js";
 import { emit, RegexBuilder } from "../core/builder.js";
-import { explain } from "../core/explainer.js";
-import { lint } from "../core/linter.js";
 import { optimize } from "../core/optimizer.js";
 import { type RegexTestCase, testRegex } from "../core/tester.js";
 import { STANDARD_PATTERNS } from "../std/patterns.js";
@@ -352,9 +350,7 @@ function validateInputEffect(input: any): Effect.Effect<never, McpError, void> {
 }
 
 // Tool handlers
-function handleBuildRegex(
-  args: any
-): Effect.Effect<never, McpError, any> {
+function handleBuildRegex(args: any): Effect.Effect<never, McpError, any> {
   return Effect.gen(function* () {
     yield* validateInputEffect(args);
 
@@ -399,9 +395,7 @@ function handleBuildRegex(
   );
 }
 
-function handleTestRegex(
-  args: any
-): Effect.Effect<never, McpError, any> {
+function handleTestRegex(args: any): Effect.Effect<never, McpError, any> {
   return Effect.gen(function* () {
     yield* validateInputEffect(args);
 
@@ -441,30 +435,32 @@ function handleTestRegex(
   );
 }
 
-function handleLintRegex(
-  args: any
-): Effect.Effect<never, McpError, any> {
+function handleLintRegex(args: any): Effect.Effect<never, McpError, any> {
   return Effect.gen(function* () {
     yield* validateInputEffect(args);
 
     const { pattern: patternStr, dialect = "js" } = args;
 
     // Try to compile the regex - if it throws, catch it and return invalid result
-    const validationResult = yield* Effect.try(() => new RegExp(patternStr)).pipe(
+    const validationResult = yield* Effect.try(
+      () => new RegExp(patternStr)
+    ).pipe(
       Effect.map(() => ({
         valid: true,
-        issues: []
+        issues: [],
       })),
       Effect.catchAll((error) => {
         // If regex compilation failed, return success with validation error
         return Effect.succeed({
           valid: false,
-          issues: [{
-            type: "syntax",
-            severity: "error",
-            message: (error as Error).message,
-            pattern: patternStr
-          }]
+          issues: [
+            {
+              type: "syntax",
+              severity: "error",
+              message: (error as Error).message,
+              pattern: patternStr,
+            },
+          ],
         });
       })
     );
@@ -485,9 +481,7 @@ function handleLintRegex(
   );
 }
 
-function handleConvertRegex(
-  args: any
-): Effect.Effect<never, McpError, any> {
+function handleConvertRegex(args: any): Effect.Effect<never, McpError, any> {
   return Effect.gen(function* () {
     yield* validateInputEffect(args);
 
@@ -527,9 +521,7 @@ function handleConvertRegex(
   );
 }
 
-function handleExplainRegex(
-  args: any
-): Effect.Effect<never, McpError, any> {
+function handleExplainRegex(args: any): Effect.Effect<never, McpError, any> {
   return Effect.gen(function* () {
     yield* validateInputEffect(args);
 
@@ -541,10 +533,10 @@ function handleExplainRegex(
       pattern: patternStr,
       explanation: {
         type: "pattern",
-        description: `Pattern explanation not yet fully implemented`,
+        description: "Pattern explanation not yet fully implemented",
         pattern: patternStr,
-        dialect
-      }
+        dialect,
+      },
     };
   }).pipe(
     Effect.catchAll((error) => {
@@ -561,9 +553,7 @@ function handleExplainRegex(
   );
 }
 
-function handleLibraryList(
-  args: any
-): Effect.Effect<never, McpError, any> {
+function handleLibraryList(args: any): Effect.Effect<never, McpError, any> {
   return Effect.gen(function* () {
     // No validateInputEffect since the error is handled differently
 
@@ -614,9 +604,7 @@ function handleLibraryList(
   );
 }
 
-function handleProposePattern(
-  args: any
-): Effect.Effect<never, McpError, any> {
+function handleProposePattern(args: any): Effect.Effect<never, McpError, any> {
   return Effect.gen(function* () {
     yield* validateInputEffect(args);
 
@@ -669,9 +657,7 @@ function handleProposePattern(
   );
 }
 
-function handleOptimizePattern(
-  args: any
-): Effect.Effect<never, McpError, any> {
+function handleOptimizePattern(args: any): Effect.Effect<never, McpError, any> {
   return Effect.gen(function* () {
     yield* validateInputEffect(args);
 
@@ -730,9 +716,7 @@ function handleOptimizePattern(
         nodesReduced: result.nodesReduced,
         reductionPercent:
           result.beforeSize > 0
-            ? Math.round(
-                (result.nodesReduced / result.beforeSize) * 100
-              )
+            ? Math.round((result.nodesReduced / result.beforeSize) * 100)
             : 0,
         passesApplied: result.passesApplied,
         iterations: result.passesApplied.length,
