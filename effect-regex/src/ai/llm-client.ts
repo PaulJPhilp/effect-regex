@@ -48,7 +48,7 @@ export class LLMRateLimitError {
  */
 export const defaultConfig: LLMConfig = {
   provider: "anthropic",
-  model: "claude-3-5-sonnet-20241022",
+  model: "claude-3-5-haiku-20241022",
   maxTokens: 2048,
   temperature: 0.7,
 };
@@ -91,7 +91,7 @@ const callAnthropic = (
     const result = yield* Effect.tryPromise({
       try: () =>
         client.messages.create({
-          model: config.model || "claude-3-5-sonnet-20241022",
+          model: config.model || "claude-3-5-haiku-20241022",
           max_tokens: config.maxTokens || 2048,
           temperature: config.temperature || 0.7,
           messages: [

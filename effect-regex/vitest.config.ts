@@ -8,5 +8,11 @@ export default defineConfig({
     coverage: {
       provider: "v8",
     },
+    env: {
+      // Load environment variables from .env files
+      // This allows tests to access process.env.ANTHROPIC_API_KEY
+    },
+    // Load .env files automatically
+    envDir: ".",
   },
 });
