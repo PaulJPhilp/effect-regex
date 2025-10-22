@@ -48,6 +48,11 @@ export interface NonCapNode extends AstNode {
   readonly child: AstNode;
 }
 
+export interface BackrefNode extends AstNode {
+  readonly type: "backref";
+  readonly target: string | number;
+}
+
 // Quantifiers
 export interface QuantifierNode extends AstNode {
   readonly type: "q";
@@ -72,6 +77,7 @@ export type Ast =
   | CharClassNode
   | GroupNode
   | NonCapNode
+  | BackrefNode
   | QuantifierNode
   | AnchorNode;
 
@@ -111,6 +117,11 @@ export const group = (child: AstNode, name?: string): GroupNode => ({
 export const noncap = (child: AstNode): NonCapNode => ({
   type: "noncap",
   child,
+});
+
+export const backref = (target: string | number): BackrefNode => ({
+  type: "backref",
+  target,
 });
 
 export const q = (
@@ -174,6 +185,12 @@ const emitNode = (node: AstNode, dialect: "js" | "re2" | "pcre"): string => {
         case "word":
           return "\\b";
       }
+      break;
+    case "backref":
+      if (typeof node.target === "string") {
+        return `\\k<${node.target}>`;
+      }
+      return `\\${node.target}`;
   }
 };
 

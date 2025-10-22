@@ -245,6 +245,33 @@ const emitAst = (
       });
     }
 
+    case "backref": {
+      const notes: string[] = [];
+      let pattern: string;
+
+      // Check dialect support
+      if (DIALECT_INFO[currentState.dialect].supportsBackrefs) {
+        // Named backreference
+        if (typeof node.target === "string") {
+          pattern = `\\k<${node.target}>`;
+        } else {
+          // Numbered backreference
+          pattern = `\\${node.target}`;
+        }
+      } else {
+        notes.push(
+          `Backreferences not supported in ${currentState.dialect.toUpperCase()} dialect`
+        );
+        pattern = `__BACKREF_${typeof node.target === "string" ? node.target : node.target}_UNSUPPORTED__`;
+      }
+
+      return processResult({
+        pattern,
+        captureMap: {},
+        notes,
+      });
+    }
+
     default:
       throw new Error(`Unknown AST node type: ${(node as any).type}`);
   }
@@ -293,6 +320,14 @@ export const validateDialect = (
           issues.push(`Named groups not supported in ${dialect.toUpperCase()}`);
         }
         validateNode(node.child);
+        break;
+
+      case "backref":
+        if (!info.supportsBackrefs) {
+          issues.push(
+            `Backreferences not supported in ${dialect.toUpperCase()}`
+          );
+        }
         break;
 
       case "seq":

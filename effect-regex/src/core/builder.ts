@@ -1,5 +1,16 @@
 import type { Ast } from "./ast.js";
-import { alt, anchor, cls, group, lit, noncap, q, raw, seq } from "./ast.js";
+import {
+  alt,
+  anchor,
+  backref,
+  cls,
+  group,
+  lit,
+  noncap,
+  q,
+  raw,
+  seq,
+} from "./ast.js";
 import { emit as emitPattern } from "./emitter.js";
 
 /**
@@ -56,6 +67,15 @@ export class RegexBuilder {
 
   capture(name?: string): RegexBuilder {
     return new RegexBuilder(group(this.ast, name));
+  }
+
+  // Backreferences
+  backreference(target: string | number): RegexBuilder {
+    return new RegexBuilder(backref(target));
+  }
+
+  static backref(target: string | number): RegexBuilder {
+    return new RegexBuilder(backref(target));
   }
 
   // Quantifiers
