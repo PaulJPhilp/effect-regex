@@ -63,7 +63,10 @@ const DIALECT_RULES: Record<
           };
         }
       }
-      if (node.type === "assertion" && (node.kind === "lookbehind" || node.kind === "negative-lookbehind")) {
+      if (
+        node.type === "assertion" &&
+        (node.kind === "lookbehind" || node.kind === "negative-lookbehind")
+      ) {
         return {
           code: "RE2_LOOKBEHIND",
           severity: "error",
@@ -86,7 +89,10 @@ const DIALECT_RULES: Record<
         }
       }
       if (node.type === "backref") {
-        const target = typeof node.target === "string" ? `"${node.target}"` : `#${node.target}`;
+        const target =
+          typeof node.target === "string"
+            ? `"${node.target}"`
+            : `#${node.target}`;
         return {
           code: "RE2_BACKREFS",
           severity: "error",
@@ -200,15 +206,16 @@ const GENERAL_RULES: ReadonlyArray<(ast: Ast) => LintIssue | null> = [
   (ast): LintIssue | null => {
     const groups = collectGroups(ast);
     const checkBackrefs = (node: Ast): LintIssue | null => {
-      if (node.type === "backref") {
-        if (!groups.has(node.target)) {
-          const target = typeof node.target === "string" ? `"${node.target}"` : `#${node.target}`;
-          return {
-            code: "UNDEFINED_BACKREF",
-            severity: "error",
-            message: `Backreference to undefined group ${target}.`,
-          };
-        }
+      if (node.type === "backref" && !groups.has(node.target)) {
+        const target =
+          typeof node.target === "string"
+            ? `"${node.target}"`
+            : `#${node.target}`;
+        return {
+          code: "UNDEFINED_BACKREF",
+          severity: "error",
+          message: `Backreference to undefined group ${target}.`,
+        };
       }
 
       // Recursively check children
@@ -226,6 +233,9 @@ const GENERAL_RULES: ReadonlyArray<(ast: Ast) => LintIssue | null> = [
         case "q":
         case "assertion":
           return checkBackrefs(node.child);
+        // Leaf nodes (lit, raw, cls, anchor, backref) don't have children
+        default:
+          break;
       }
       return null;
     };

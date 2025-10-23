@@ -3,7 +3,6 @@
   "title": "MCP Tools Schemas",
   "description": "JSON schemas for all MCP server tools in effect-regex",
   "definitions": {
-
     "build_regex": {
       "type": "object",
       "properties": {
@@ -35,8 +34,28 @@
                           "type": "object",
                           "description": "Fluent builder AST",
                           "properties": {
-                            "type": { "enum": ["lit", "raw", "seq", "alt", "cls", "group", "noncap", "q", "anchor"] },
-                            "value": { "type": ["string", "number", "boolean", "array", "object"] }
+                            "type": {
+                              "enum": [
+                                "lit",
+                                "raw",
+                                "seq",
+                                "alt",
+                                "cls",
+                                "group",
+                                "noncap",
+                                "q",
+                                "anchor"
+                              ]
+                            },
+                            "value": {
+                              "type": [
+                                "string",
+                                "number",
+                                "boolean",
+                                "array",
+                                "object"
+                              ]
+                            }
                           }
                         }
                       },
@@ -47,7 +66,21 @@
                       "properties": {
                         "type": { "const": "std" },
                         "name": {
-                          "enum": ["uuidV4", "semverStrict", "ipv4", "ipv6Compressed", "quotedString", "keyValue", "csvList", "pathSegment", "filePathBasic", "integer", "float", "isoDate", "isoDateTime"]
+                          "enum": [
+                            "uuidV4",
+                            "semverStrict",
+                            "ipv4",
+                            "ipv6Compressed",
+                            "quotedString",
+                            "keyValue",
+                            "csvList",
+                            "pathSegment",
+                            "filePathBasic",
+                            "integer",
+                            "float",
+                            "isoDate",
+                            "isoDateTime"
+                          ]
                         }
                       },
                       "required": ["type", "name"]
@@ -200,7 +233,12 @@
                       "expectedCaptures": {
                         "type": "object",
                         "patternProperties": {
-                          ".*": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }] }
+                          ".*": {
+                            "oneOf": [
+                              { "type": "string" },
+                              { "type": "array", "items": { "type": "string" } }
+                            ]
+                          }
                         }
                       }
                     },
@@ -476,6 +514,4 @@
       }
     }
   }
-}</content>
-</xai:function_call: mx: create_file>
-<parameter name="path">/Users/paul/Projects/effect-regex/effect-regex/src/specs/command-specs.json
+}

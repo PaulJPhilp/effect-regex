@@ -31,7 +31,7 @@ export interface ExplainOptions {
  * Generate a structured explanation of a regex AST
  */
 export const explain = (ast: Ast, options: ExplainOptions): ExplanationNode => {
-  const { format, dialect, maxDepth = 10 } = options;
+  const { maxDepth = 10 } = options;
 
   const explainNode = (node: Ast, depth = 0): ExplanationNode => {
     if (depth > maxDepth) {
@@ -146,6 +146,52 @@ export const explain = (ast: Ast, options: ExplainOptions): ExplanationNode => {
           notes: ["Tries options from left to right"],
         };
       }
+
+      case "trycapture": {
+        const childExplanation = explainNode(node.child, depth + 1);
+        const desc = node.name
+          ? `Captures as "${node.name}"${node.validation ? ` with validation: ${node.validation.description}` : ""}`
+          : `Captures (unnamed)${node.validation ? ` with validation: ${node.validation.description}` : ""}`;
+        return {
+          type: "group",
+          description: desc,
+          pattern: node.name
+            ? `(?<${node.name}>${childExplanation.pattern})`
+            : `(${childExplanation.pattern})`,
+          children: [childExplanation],
+        };
+      }
+
+      case "backref": {
+        const target =
+          typeof node.target === "string"
+            ? `"${node.target}"`
+            : `#${node.target}`;
+        return {
+          type: "literal",
+          description: `References the captured group ${target}`,
+          pattern:
+            typeof node.target === "string"
+              ? `\\k<${node.target}>`
+              : `\\${node.target}`,
+        };
+      }
+
+      case "assertion": {
+        const childExplanation = explainNode(node.child, depth + 1);
+        const kindMap = {
+          lookahead: "Positive lookahead",
+          "negative-lookahead": "Negative lookahead",
+          lookbehind: "Positive lookbehind",
+          "negative-lookbehind": "Negative lookbehind",
+        };
+        return {
+          type: "assertion",
+          description: `${kindMap[node.kind]}: asserts that what follows ${node.kind.includes("negative") ? "does not " : ""}matches`,
+          pattern: `(?${node.kind === "lookahead" ? "=" : node.kind === "negative-lookahead" ? "!" : node.kind === "lookbehind" ? "<=" : "<!"}${childExplanation.pattern})`,
+          children: [childExplanation],
+        };
+      }
     }
   };
 
@@ -171,7 +217,7 @@ export const formatExplanation = (
   if (node.children && node.children.length > 0) {
     lines.push(`${indent}Components:`);
     for (const child of node.children) {
-      lines.push(formatExplanation(child, indent + "  "));
+      lines.push(formatExplanation(child, `${indent}  `));
     }
   }
 

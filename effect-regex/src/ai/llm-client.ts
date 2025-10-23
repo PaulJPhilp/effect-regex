@@ -106,7 +106,7 @@ const callAnthropic = (
         if (error?.status === 429) {
           const retryAfter = error?.headers?.["retry-after"];
           return new LLMRateLimitError(
-            retryAfter ? Number.parseInt(retryAfter) : undefined
+            retryAfter ? Number.parseInt(retryAfter, 10) : undefined
           );
         }
         return new LLMError(

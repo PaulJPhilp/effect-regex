@@ -91,7 +91,7 @@ export class RegexBuilder {
     return new RegexBuilder(backref(target));
   }
 
-  // Assertions (lookahead/lookbehind)
+  // Assertions (lookahead/lookbehind) - instance methods
   // Note: These are typically used as standalone assertions, not chained
   // For most use cases, use the static methods instead
   lookahead(pattern: RegexBuilder): RegexBuilder {
@@ -99,36 +99,19 @@ export class RegexBuilder {
     return this.then(RegexBuilder.lookahead(pattern));
   }
 
-  negativeLookahead(pattern: RegexBuilder): RegexBuilder {
-    // This pattern followed by a negative lookahead
-    return this.then(RegexBuilder.negativeLookahead(pattern));
-  }
-
   lookbehind(pattern: RegexBuilder): RegexBuilder {
     // Lookbehind assertion followed by this pattern
     return RegexBuilder.lookbehind(pattern).then(this);
   }
 
+  negativeLookahead(pattern: RegexBuilder): RegexBuilder {
+    // This pattern followed by a negative lookahead
+    return this.then(RegexBuilder.negativeLookahead(pattern));
+  }
+
   negativeLookbehind(pattern: RegexBuilder): RegexBuilder {
     // Negative lookbehind assertion followed by this pattern
     return RegexBuilder.negativeLookbehind(pattern).then(this);
-  }
-
-  // Static assertion constructors
-  static lookahead(pattern: RegexBuilder): RegexBuilder {
-    return new RegexBuilder(lookahead(pattern.ast));
-  }
-
-  static negativeLookahead(pattern: RegexBuilder): RegexBuilder {
-    return new RegexBuilder(negativeLookahead(pattern.ast));
-  }
-
-  static lookbehind(pattern: RegexBuilder): RegexBuilder {
-    return new RegexBuilder(lookbehind(pattern.ast));
-  }
-
-  static negativeLookbehind(pattern: RegexBuilder): RegexBuilder {
-    return new RegexBuilder(negativeLookbehind(pattern.ast));
   }
 
   // Quantifiers
@@ -186,6 +169,24 @@ export class RegexBuilder {
     return RegexBuilder.raw(".");
   }
 
+  // Static assertion constructors
+  // biome-ignore lint/suspicious/useAdjacentOverloadSignatures: instance and static methods with same names are intentionally separate
+  static lookahead(pattern: RegexBuilder): RegexBuilder {
+    return new RegexBuilder(lookahead(pattern.ast));
+  }
+
+  static lookbehind(pattern: RegexBuilder): RegexBuilder {
+    return new RegexBuilder(lookbehind(pattern.ast));
+  }
+
+  static negativeLookahead(pattern: RegexBuilder): RegexBuilder {
+    return new RegexBuilder(negativeLookahead(pattern.ast));
+  }
+
+  static negativeLookbehind(pattern: RegexBuilder): RegexBuilder {
+    return new RegexBuilder(negativeLookbehind(pattern.ast));
+  }
+
   // Get the AST
   getAst(): Ast {
     return this.ast;
@@ -223,5 +224,5 @@ export interface RegexPattern {
 export const emit = (
   builder: RegexBuilder,
   dialect: "js" | "re2" | "pcre" = "js",
-  anchor = false
-): RegexPattern => emitPattern(builder, dialect, anchor);
+  shouldAnchor = false
+): RegexPattern => emitPattern(builder, dialect, shouldAnchor);
