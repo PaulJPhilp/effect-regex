@@ -63,6 +63,13 @@ const DIALECT_RULES: Record<
           };
         }
       }
+      if (node.type === "assertion" && (node.kind === "lookbehind" || node.kind === "negative-lookbehind")) {
+        return {
+          code: "RE2_LOOKBEHIND",
+          severity: "error",
+          message: `${node.kind} assertions are not supported in RE2.`,
+        };
+      }
       return null;
     },
 
@@ -78,6 +85,14 @@ const DIALECT_RULES: Record<
           };
         }
       }
+      if (node.type === "backref") {
+        const target = typeof node.target === "string" ? `"${node.target}"` : `#${node.target}`;
+        return {
+          code: "RE2_BACKREFS",
+          severity: "error",
+          message: `Backreferences are not supported in RE2 (reference to ${target}).`,
+        };
+      }
       return null;
     },
   ],
@@ -85,6 +100,41 @@ const DIALECT_RULES: Record<
   pcre: [
     // PCRE-specific rules can go here
   ],
+};
+
+/**
+ * Helper to collect all groups in the AST
+ */
+const collectGroups = (ast: Ast): Map<string | number, number> => {
+  const groups = new Map<string | number, number>();
+  let groupCounter = 0;
+
+  const traverse = (node: Ast): void => {
+    switch (node.type) {
+      case "group":
+        groupCounter++;
+        if (node.name) {
+          groups.set(node.name, groupCounter);
+        }
+        groups.set(groupCounter, groupCounter);
+        traverse(node.child);
+        break;
+      case "seq":
+      case "alt":
+        node.children.forEach(traverse);
+        break;
+      case "noncap":
+      case "q":
+      case "assertion":
+        traverse(node.child);
+        break;
+      default:
+        break;
+    }
+  };
+
+  traverse(ast);
+  return groups;
 };
 
 /**
@@ -137,6 +187,42 @@ const GENERAL_RULES: ReadonlyArray<(ast: Ast) => LintIssue | null> = [
     }
     return null;
   },
+
+  // Check for undefined backreferences (must be done at AST root level)
+  (ast): LintIssue | null => {
+    const groups = collectGroups(ast);
+    const checkBackrefs = (node: Ast): LintIssue | null => {
+      if (node.type === "backref") {
+        if (!groups.has(node.target)) {
+          const target = typeof node.target === "string" ? `"${node.target}"` : `#${node.target}`;
+          return {
+            code: "UNDEFINED_BACKREF",
+            severity: "error",
+            message: `Backreference to undefined group ${target}.`,
+          };
+        }
+      }
+
+      // Recursively check children
+      switch (node.type) {
+        case "seq":
+        case "alt":
+          for (const child of node.children) {
+            const issue = checkBackrefs(child);
+            if (issue) return issue;
+          }
+          break;
+        case "group":
+        case "noncap":
+        case "q":
+        case "assertion":
+          return checkBackrefs(node.child);
+      }
+      return null;
+    };
+
+    return checkBackrefs(ast);
+  },
 ];
 
 /**
@@ -145,16 +231,40 @@ const GENERAL_RULES: ReadonlyArray<(ast: Ast) => LintIssue | null> = [
 export const lint = (ast: Ast, dialect: Dialect): LintResult => {
   const issues: LintIssue[] = [];
 
-  // Run dialect-specific rules
-  const dialectRules = DIALECT_RULES[dialect];
-  for (const rule of dialectRules) {
-    const issue = rule(ast);
-    if (issue) {
-      issues.push(issue);
-    }
-  }
+  // Recursively lint all nodes in the tree
+  const lintNode = (node: Ast, path: string[] = []): void => {
+    const currentPath = [...path, node.type];
 
-  // Run general rules
+    // Run dialect-specific rules on this node
+    const dialectRules = DIALECT_RULES[dialect];
+    for (const rule of dialectRules) {
+      const issue = rule(node);
+      if (issue) {
+        issues.push(issue);
+      }
+    }
+
+    // Recursively check children
+    switch (node.type) {
+      case "seq":
+      case "alt":
+        node.children.forEach((child, index) =>
+          lintNode(child, [...currentPath, index.toString()])
+        );
+        break;
+      case "group":
+      case "noncap":
+      case "q":
+      case "assertion":
+        lintNode(node.child, currentPath);
+        break;
+      default:
+        // Leaf nodes (lit, raw, cls, anchor, backref) don't have children
+        break;
+    }
+  };
+
+  // Run general rules on the root AST (these may traverse the tree themselves)
   for (const rule of GENERAL_RULES) {
     const issue = rule(ast);
     if (issue) {
@@ -162,31 +272,8 @@ export const lint = (ast: Ast, dialect: Dialect): LintResult => {
     }
   }
 
-  // Recursively lint child nodes
-  const lintChildren = (node: Ast, path: string[] = []): void => {
-    const currentPath = [...path, node.type];
-
-    switch (node.type) {
-      case "seq":
-      case "alt":
-        node.children.forEach((child, index) =>
-          lintChildren(child, [...currentPath, index.toString()])
-        );
-        break;
-      case "group":
-      case "noncap":
-        lintChildren(node.child, currentPath);
-        break;
-      case "q":
-        lintChildren(node.child, currentPath);
-        break;
-      default:
-        // Leaf nodes don't need recursion
-        break;
-    }
-  };
-
-  lintChildren(ast);
+  // Lint all nodes in the tree with dialect-specific rules
+  lintNode(ast);
 
   const hasErrors = issues.some((issue) => issue.severity === "error");
 
@@ -229,6 +316,12 @@ const estimateComplexity = (node: Ast): number => {
     }
     case "anchor":
       return 1;
+    case "backref":
+      // Backreferences add moderate complexity
+      return 15;
+    case "assertion":
+      // Assertions add complexity based on their child pattern
+      return estimateComplexity(node.child) + 10;
     default:
       return 1;
   }

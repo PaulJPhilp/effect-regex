@@ -56,7 +56,11 @@ export interface BackrefNode extends AstNode {
 // Assertions (lookahead/lookbehind)
 export interface AssertionNode extends AstNode {
   readonly type: "assertion";
-  readonly kind: "lookahead" | "negative-lookahead" | "lookbehind" | "negative-lookbehind";
+  readonly kind:
+    | "lookahead"
+    | "negative-lookahead"
+    | "lookbehind"
+    | "negative-lookbehind";
   readonly child: AstNode;
 }
 

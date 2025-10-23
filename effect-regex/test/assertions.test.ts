@@ -208,7 +208,9 @@ describe("Assertions", () => {
         .lookbehind(RegexBuilder.lit("$"));
 
       const result = emit(pattern, "js");
-      expect(result.notes.filter((n) => n.includes("not supported"))).toHaveLength(0);
+      expect(
+        result.notes.filter((n) => n.includes("not supported"))
+      ).toHaveLength(0);
       expect(result.pattern).toBe("(?<=\\$)[0-9]+");
     });
 
@@ -218,7 +220,9 @@ describe("Assertions", () => {
         .lookbehind(RegexBuilder.lit("$"));
 
       const result = emit(pattern, "pcre");
-      expect(result.notes.filter((n) => n.includes("not supported"))).toHaveLength(0);
+      expect(
+        result.notes.filter((n) => n.includes("not supported"))
+      ).toHaveLength(0);
       expect(result.pattern).toBe("(?<=\\$)[0-9]+");
     });
   });
@@ -268,7 +272,9 @@ describe("Assertions", () => {
 
     it("should handle assertions in alternations", () => {
       const pattern = RegexBuilder.alt(
-        RegexBuilder.word().oneOrMore().then(RegexBuilder.lookahead(RegexBuilder.digit())),
+        RegexBuilder.word()
+          .oneOrMore()
+          .then(RegexBuilder.lookahead(RegexBuilder.digit())),
         RegexBuilder.digit().oneOrMore().lookbehind(RegexBuilder.lit("$"))
       );
 
@@ -357,7 +363,12 @@ describe("Assertions", () => {
       const pattern = RegexBuilder.digit()
         .oneOrMore()
         .lookbehind(RegexBuilder.lit("$"))
-        .then(RegexBuilder.lit(".").then(RegexBuilder.digit().exactly(2)).group().optional())
+        .then(
+          RegexBuilder.lit(".")
+            .then(RegexBuilder.digit().exactly(2))
+            .group()
+            .optional()
+        )
         .capture("price");
 
       const result = emit(pattern, "js");
