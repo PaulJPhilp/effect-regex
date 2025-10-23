@@ -14,6 +14,7 @@ import {
   q,
   raw,
   seq,
+  tryCapture,
 } from "./ast.js";
 import { emit as emitPattern } from "./emitter.js";
 
@@ -71,6 +72,14 @@ export class RegexBuilder {
 
   capture(name?: string): RegexBuilder {
     return new RegexBuilder(group(this.ast, name));
+  }
+
+  // TryCapture - capture with validation metadata
+  tryCapture(
+    name?: string,
+    validation?: { description: string; pattern?: string }
+  ): RegexBuilder {
+    return new RegexBuilder(tryCapture(this.ast, name, validation));
   }
 
   // Backreferences

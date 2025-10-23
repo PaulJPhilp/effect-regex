@@ -209,6 +209,53 @@ const emitAst = (
       });
     }
 
+    case "trycapture": {
+      const { result: childResult, newState } = emitAst(
+        node.child,
+        currentState
+      );
+      currentState = newState;
+      const groupIndex = currentState.groupCount + 1;
+      currentState = { ...currentState, groupCount: groupIndex };
+
+      let pattern: string;
+      const captureMap = { ...childResult.captureMap };
+      const notes = [...childResult.notes];
+
+      // Add validation note if present
+      if (node.validation) {
+        notes.push(
+          `TryCapture validation: ${node.validation.description}${node.validation.pattern ? ` (pattern: ${node.validation.pattern})` : ""}`
+        );
+      }
+
+      if (node.name) {
+        if (DIALECT_INFO[currentState.dialect].supportsNamedGroups) {
+          pattern = `(?<${node.name}>${childResult.pattern})`;
+          captureMap[node.name] = groupIndex;
+        } else {
+          // Downgrade to numbered group
+          pattern = `(${childResult.pattern})`;
+          captureMap[node.name] = groupIndex;
+          currentState = {
+            ...currentState,
+            notes: [
+              ...currentState.notes,
+              `Named group "${node.name}" downgraded to numbered group ${groupIndex} for ${currentState.dialect.toUpperCase()}`,
+            ],
+          };
+        }
+      } else {
+        pattern = `(${childResult.pattern})`;
+      }
+
+      return processResult({
+        pattern,
+        captureMap,
+        notes,
+      });
+    }
+
     case "q": {
       const { result: childResult, newState } = emitAst(
         node.child,
@@ -359,6 +406,13 @@ export const validateDialect = (
   const validateNode = (node: Ast): void => {
     switch (node.type) {
       case "group":
+        if (node.name && !info.supportsNamedGroups) {
+          issues.push(`Named groups not supported in ${dialect.toUpperCase()}`);
+        }
+        validateNode(node.child);
+        break;
+
+      case "trycapture":
         if (node.name && !info.supportsNamedGroups) {
           issues.push(`Named groups not supported in ${dialect.toUpperCase()}`);
         }

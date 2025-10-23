@@ -48,6 +48,16 @@ export interface NonCapNode extends AstNode {
   readonly child: AstNode;
 }
 
+export interface TryCaptureNode extends AstNode {
+  readonly type: "trycapture";
+  readonly name?: string;
+  readonly child: AstNode;
+  readonly validation?: {
+    readonly description: string;
+    readonly pattern?: string; // Optional regex pattern to validate against
+  };
+}
+
 export interface BackrefNode extends AstNode {
   readonly type: "backref";
   readonly target: string | number;
@@ -88,6 +98,7 @@ export type Ast =
   | CharClassNode
   | GroupNode
   | NonCapNode
+  | TryCaptureNode
   | BackrefNode
   | AssertionNode
   | QuantifierNode
@@ -129,6 +140,17 @@ export const group = (child: AstNode, name?: string): GroupNode => ({
 export const noncap = (child: AstNode): NonCapNode => ({
   type: "noncap",
   child,
+});
+
+export const tryCapture = (
+  child: AstNode,
+  name?: string,
+  validation?: { description: string; pattern?: string }
+): TryCaptureNode => ({
+  type: "trycapture",
+  name,
+  child,
+  validation,
 });
 
 export const backref = (target: string | number): BackrefNode => ({
@@ -199,6 +221,12 @@ const emitNode = (node: AstNode, dialect: "js" | "re2" | "pcre"): string => {
         : `(${emitNode(node.child, dialect)})`;
     case "noncap":
       return `(?:${emitNode(node.child, dialect)})`;
+    case "trycapture":
+      // TryCapture emits as a regular capture group
+      // Validation metadata is used by the tester, not the regex itself
+      return node.name
+        ? `(?<${node.name}>${emitNode(node.child, dialect)})`
+        : `(${emitNode(node.child, dialect)})`;
     case "q": {
       const quantifier =
         node.max === null

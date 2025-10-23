@@ -41,7 +41,7 @@ const DIALECT_RULES: Record<
   re2: [
     // RE2 doesn't support named groups
     (node): LintIssue | null => {
-      if (node.type === "group" && node.name) {
+      if ((node.type === "group" || node.type === "trycapture") && node.name) {
         return {
           code: "RE2_NAMED_GROUPS",
           severity: "error",
@@ -112,6 +112,14 @@ const collectGroups = (ast: Ast): Map<string | number, number> => {
   const traverse = (node: Ast): void => {
     switch (node.type) {
       case "group":
+        groupCounter++;
+        if (node.name) {
+          groups.set(node.name, groupCounter);
+        }
+        groups.set(groupCounter, groupCounter);
+        traverse(node.child);
+        break;
+      case "trycapture":
         groupCounter++;
         if (node.name) {
           groups.set(node.name, groupCounter);
@@ -214,6 +222,7 @@ const GENERAL_RULES: ReadonlyArray<(ast: Ast) => LintIssue | null> = [
           break;
         case "group":
         case "noncap":
+        case "trycapture":
         case "q":
         case "assertion":
           return checkBackrefs(node.child);
@@ -254,6 +263,7 @@ export const lint = (ast: Ast, dialect: Dialect): LintResult => {
         break;
       case "group":
       case "noncap":
+      case "trycapture":
       case "q":
       case "assertion":
         lintNode(node.child, currentPath);
@@ -306,6 +316,7 @@ const estimateComplexity = (node: Ast): number => {
       );
     case "group":
     case "noncap":
+    case "trycapture":
       return estimateComplexity(node.child) + 2;
     case "q": {
       // Quantifiers add exponential complexity
