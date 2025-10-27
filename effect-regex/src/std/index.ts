@@ -24,7 +24,10 @@ export * from "./security-patterns.js";
 
 // Create a unified registry combining both pattern sets
 import { STANDARD_PATTERNS, type StandardPatternName } from "./patterns.js";
-import { SECURITY_PATTERNS, type SecurityPatternName } from "./security-patterns.js";
+import {
+  SECURITY_PATTERNS,
+  type SecurityPatternName,
+} from "./security-patterns.js";
 
 /**
  * Complete registry of all available patterns
@@ -67,7 +70,9 @@ export function searchPatterns(query: string): AllPatternName[] {
 /**
  * Get patterns by dialect support
  */
-export function getPatternsByDialect(dialect: "js" | "re2" | "pcre" | "universal") {
+export function getPatternsByDialect(
+  dialect: "js" | "re2" | "pcre" | "universal"
+) {
   return listPatterns().filter((name) => {
     const pattern = ALL_PATTERNS[name];
     return pattern.dialect === "universal" || pattern.dialect === dialect;

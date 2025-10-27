@@ -1,6 +1,26 @@
 /**
- * LLM Client for AI-powered pattern generation
- * Supports multiple providers with Effect-based error handling
+ * LLM Client for AI-Powered Pattern Generation
+ *
+ * Provides a unified interface for calling multiple LLM providers with:
+ * - Type-safe Effect-based error handling
+ * - Automatic retry logic with exponential backoff
+ * - Rate limit handling with respect for retry-after headers
+ * - Secure API key management via environment variables
+ *
+ * **Supported Providers**:
+ * - **Anthropic Claude** (fully implemented) - Haiku 3.5 recommended
+ * - **OpenAI** (placeholder) - GPT-4 planned
+ * - **Local LLM** (placeholder) - Ollama/llama.cpp planned
+ *
+ * **Security Best Practices**:
+ * - API keys read ONLY from environment variables
+ * - Never pass API keys in config objects
+ * - Use `.env` files for local development
+ * - Keep API keys out of version control
+ *
+ * @module ai/llm-client
+ * @see {@link callLLM} - Main LLM call function
+ * @see {@link callLLMWithRetry} - Recommended with built-in retry logic
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -8,22 +28,40 @@ import { Effect } from "effect";
 
 /**
  * Supported LLM providers
+ *
+ * - **anthropic**: Claude models via Anthropic API (implemented)
+ * - **openai**: GPT models via OpenAI API (not yet implemented)
+ * - **local**: Local LLM via Ollama/llama.cpp (not yet implemented)
+ * - **none**: Disable LLM usage (heuristic fallback only)
  */
 export type LLMProvider = "anthropic" | "openai" | "local" | "none";
 
 /**
- * LLM configuration
+ * Configuration for LLM API calls
+ *
+ * **Security Note**: Never include `apiKey` in config.
+ * API keys are automatically read from environment variables:
+ * - Anthropic: `ANTHROPIC_API_KEY`
+ * - OpenAI: `OPENAI_API_KEY`
  */
 export interface LLMConfig {
+  /** LLM provider to use */
   readonly provider: LLMProvider;
+  /** API key (deprecated - use environment variables instead) */
   readonly apiKey?: string;
+  /** Model name override (default: claude-3-5-haiku-20241022 for Anthropic) */
   readonly model?: string;
+  /** Maximum tokens in response (default: 2048) */
   readonly maxTokens?: number;
+  /** Temperature 0-2 (default: 0.7) - higher = more creative */
   readonly temperature?: number;
 }
 
 /**
- * LLM error types
+ * General LLM error
+ *
+ * Thrown for API errors, network issues, unexpected responses, etc.
+ * Retryable errors (should be caught and retried with backoff).
  */
 export class LLMError {
   readonly _tag = "LLMError";
@@ -33,13 +71,26 @@ export class LLMError {
   ) {}
 }
 
+/**
+ * LLM configuration error
+ *
+ * Thrown for missing API keys, invalid providers, etc.
+ * NOT retryable (user must fix configuration).
+ */
 export class LLMConfigError {
   readonly _tag = "LLMConfigError";
   constructor(readonly message: string) {}
 }
 
+/**
+ * Rate limit error
+ *
+ * Special case of retryable error with retry-after information.
+ * Automatically handled by {@link callLLMWithRetry}.
+ */
 export class LLMRateLimitError {
   readonly _tag = "LLMRateLimitError";
+  /** Seconds to wait before retry (from API header) */
   constructor(readonly retryAfter?: number) {}
 }
 
@@ -154,7 +205,45 @@ const callLocal = (
   );
 
 /**
- * Main LLM call function with provider routing
+ * Call an LLM with the given prompt
+ *
+ * Routes to the appropriate provider implementation based on configuration.
+ * API keys are automatically loaded from environment variables.
+ *
+ * **Recommendation**: Use {@link callLLMWithRetry} instead for automatic retry logic.
+ *
+ * **Error Handling**:
+ * - `LLMConfigError`: Missing API key or invalid provider (not retryable)
+ * - `LLMRateLimitError`: Rate limited (contains retry-after info)
+ * - `LLMError`: API error, network issue, etc. (retryable)
+ *
+ * @param prompt - The prompt to send to the LLM
+ * @param config - Optional configuration (provider, model, temperature, etc.)
+ * @returns Effect yielding LLM response or errors
+ * @example
+ * ```typescript
+ * // Use default config (Anthropic Haiku, temperature 0.7)
+ * const response1 = await Effect.runPromise(
+ *   callLLM("Generate a regex for email addresses")
+ * );
+ *
+ * // Custom config
+ * const response2 = await Effect.runPromise(
+ *   callLLM("Generate a pattern", {
+ *     provider: "anthropic",
+ *     temperature: 0.5,
+ *     maxTokens: 1024
+ *   })
+ * );
+ *
+ * // Handle errors
+ * const result = await Effect.runPromise(
+ *   Effect.either(callLLM("prompt"))
+ * );
+ * if (result._tag === "Left") {
+ *   console.error(result.left.message);
+ * }
+ * ```
  */
 export const callLLM = (
   prompt: string,
@@ -185,13 +274,37 @@ export const callLLM = (
 };
 
 /**
- * Call LLM with retry logic and exponential backoff
+ * Call LLM with automatic retry logic and exponential backoff
  *
- * Features:
- * - Exponential backoff with jitter
- * - Special handling for rate limits (respects retry-after header)
- * - No retry for config errors (API key missing, etc.)
- * - Max backoff capped at 10 seconds
+ * **Recommended** over {@link callLLM} for production use.
+ * Handles transient failures, rate limits, and network issues gracefully.
+ *
+ * **Retry Strategy**:
+ * - **Rate Limits**: Respects `retry-after` header, otherwise exponential backoff
+ * - **Other Errors**: Exponential backoff with jitter (1s, 2s, 4s, max 10s)
+ * - **Config Errors**: No retry (fails immediately)
+ *
+ * **Exponential Backoff Formula**:
+ * ```
+ * delay = min(2^attempt * 1000, 10000) + random(0, 30% of delay)
+ * ```
+ *
+ * @param prompt - The prompt to send to the LLM
+ * @param config - Optional configuration
+ * @param maxRetries - Maximum retry attempts (default: 3)
+ * @returns Effect yielding LLM response (LLMRateLimitError converted to LLMError)
+ * @example
+ * ```typescript
+ * // Basic usage (recommended)
+ * const response = await Effect.runPromise(
+ *   callLLMWithRetry("Generate email regex")
+ * );
+ *
+ * // With custom retries
+ * const response2 = await Effect.runPromise(
+ *   callLLMWithRetry("Generate pattern", {}, 5)  // 5 retries
+ * );
+ * ```
  */
 export const callLLMWithRetry = (
   prompt: string,
@@ -252,7 +365,33 @@ export const callLLMWithRetry = (
 };
 
 /**
- * Check if LLM is available (API key configured)
+ * Check if LLM provider is available
+ *
+ * Determines if the specified provider can be used by checking
+ * for the presence of required API keys in environment variables.
+ *
+ * **Use Case**: Decide whether to use LLM or fallback to heuristics
+ *
+ * @param provider - LLM provider to check (default: "anthropic")
+ * @returns Effect yielding true if API key is configured, false otherwise
+ * @example
+ * ```typescript
+ * const available = await Effect.runPromise(
+ *   isLLMAvailable("anthropic")
+ * );
+ *
+ * if (available) {
+ *   // Use LLM-powered generation
+ *   const proposal = await Effect.runPromise(
+ *     proposePatternWithLLM(examples, [], "context")
+ *   );
+ * } else {
+ *   // Fall back to heuristics
+ *   const proposal = await Effect.runPromise(
+ *     proposePatternHeuristic(examples, [])
+ *   );
+ * }
+ * ```
  */
 export const isLLMAvailable = (
   provider: LLMProvider = "anthropic"

@@ -1,18 +1,41 @@
+/**
+ * Pattern Linter - validates AST patterns and detects potential issues
+ *
+ * This module provides comprehensive linting for regex patterns, checking for:
+ * - Dialect compatibility issues (RE2, PCRE, JavaScript)
+ * - Potential catastrophic backtracking
+ * - Undefined backreferences
+ * - Empty alternatives
+ * - High pattern complexity
+ *
+ * @module core/linter
+ */
+
 import type { Ast } from "./ast.js";
 import type { Dialect } from "./emitter.js";
 
 /**
  * Lint issue severity levels
+ *
+ * - **error**: Pattern will not work correctly (e.g., undefined backreference)
+ * - **warning**: Pattern may have issues but will still work (e.g., performance)
  */
 export type LintSeverity = "error" | "warning";
 
 /**
- * A linting issue
+ * A linting issue detected in a pattern
+ *
+ * Each issue includes a code for categorization, severity level, and
+ * descriptive message. Optional position information may be included.
  */
 export interface LintIssue {
+  /** Unique code identifying the issue type (e.g., "RE2_BACKREFS", "CAT_BACKTRACK") */
   readonly code: string;
+  /** Severity level of the issue */
   readonly severity: LintSeverity;
+  /** Human-readable description of the issue */
   readonly message: string;
+  /** Optional position information in the source pattern */
   readonly position?: {
     readonly start: number;
     readonly end: number;
@@ -20,10 +43,15 @@ export interface LintIssue {
 }
 
 /**
- * Lint result
+ * Result of linting a pattern
+ *
+ * Contains validation status and a list of all detected issues.
+ * A pattern is considered valid if it has no errors (warnings are acceptable).
  */
 export interface LintResult {
+  /** Whether the pattern is valid (no errors, warnings OK) */
   readonly valid: boolean;
+  /** All detected issues, ordered by severity then position */
   readonly issues: readonly LintIssue[];
 }
 
@@ -109,7 +137,14 @@ const DIALECT_RULES: Record<
 };
 
 /**
- * Helper to collect all groups in the AST
+ * Collect all capture groups from an AST
+ *
+ * Traverses the AST and builds a map of all capture groups (both named and numbered).
+ * Used to validate backreferences point to existing groups.
+ *
+ * @param ast - The AST to collect groups from
+ * @returns Map of group names/numbers to their indices
+ * @internal
  */
 const collectGroups = (ast: Ast): Map<string | number, number> => {
   const groups = new Map<string | number, number>();
@@ -245,7 +280,23 @@ const GENERAL_RULES: ReadonlyArray<(ast: Ast) => LintIssue | null> = [
 ];
 
 /**
- * Lint a regex AST for issues
+ * Lint a regex AST for potential issues
+ *
+ * Performs comprehensive validation of a regex pattern AST, checking for:
+ * - Dialect-specific compatibility issues
+ * - Potential performance problems (catastrophic backtracking, high complexity)
+ * - Logical errors (undefined backreferences, empty alternatives)
+ *
+ * @param ast - The AST to lint
+ * @param dialect - Target regex dialect for compatibility checking
+ * @returns Lint result with validity status and list of issues
+ * @example
+ * ```typescript
+ * const ast = backref("nonexistent");
+ * const result = lint(ast, "js");
+ * // result.valid === false
+ * // result.issues[0].code === "UNDEFINED_BACKREF"
+ * ```
  */
 export const lint = (ast: Ast, dialect: Dialect): LintResult => {
   const issues: LintIssue[] = [];
@@ -304,7 +355,15 @@ export const lint = (ast: Ast, dialect: Dialect): LintResult => {
 };
 
 /**
- * Estimate pattern complexity for performance warnings
+ * Estimate pattern complexity score
+ *
+ * Calculates a heuristic complexity score for a pattern node.
+ * Higher scores indicate patterns that may have performance issues.
+ * Quantifiers and alternations contribute exponentially to complexity.
+ *
+ * @param node - The AST node to estimate complexity for
+ * @returns Complexity score (threshold for warnings is typically 1000)
+ * @internal
  */
 const estimateComplexity = (node: Ast): number => {
   switch (node.type) {
@@ -349,7 +408,21 @@ const estimateComplexity = (node: Ast): number => {
 };
 
 /**
- * Format lint results for display
+ * Format lint results for human-readable display
+ *
+ * Converts a LintResult into a formatted string with emoji indicators
+ * for severity levels. Useful for CLI output or logging.
+ *
+ * @param result - The lint result to format
+ * @returns Formatted multi-line string with all issues listed
+ * @example
+ * ```typescript
+ * const result = lint(ast, "re2");
+ * console.log(formatLintResult(result));
+ * // Lint Results:
+ * // ❌ RE2_BACKREFS: Backreferences are not supported in RE2.
+ * // ⚠️ CAT_BACKTRACK: Potential catastrophic backtracking detected.
+ * ```
  */
 export const formatLintResult = (result: LintResult): string => {
   if (result.issues.length === 0) {

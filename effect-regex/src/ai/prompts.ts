@@ -1,9 +1,54 @@
 /**
- * Prompt engineering for LLM-based pattern generation
+ * Prompt Engineering for LLM-Based Pattern Generation
+ *
+ * This module provides carefully crafted prompts for guiding LLMs to generate
+ * regex patterns using the RegexBuilder API. The prompts include:
+ * - Complete API reference embedded in the prompt
+ * - Security constraints (no eval, no unsafe patterns)
+ * - Examples and context for pattern generation
+ * - Structured output format expectations
+ *
+ * **Design Philosophy**:
+ * - Prompt includes full API to reduce hallucination
+ * - Explicit security rules prevent code injection
+ * - Example-driven learning for better results
+ * - Iterative refinement support for failed tests
+ *
+ * @module ai/prompts
  */
 
 /**
- * Generate a prompt for initial pattern proposal
+ * Generate an initial pattern proposal prompt for LLM
+ *
+ * Creates a comprehensive prompt that guides the LLM to generate a RegexBuilder
+ * pattern based on positive and negative examples. The prompt embeds the full
+ * RegexBuilder API reference to minimize hallucinations and ensure valid output.
+ *
+ * **Prompt Structure**:
+ * 1. API Reference - Complete RegexBuilder API with examples
+ * 2. Task Definition - What the pattern must match/not match
+ * 3. Requirements - Security and quality constraints
+ * 4. Response Format - Expected code structure
+ *
+ * **Security Constraints Embedded**:
+ * - No eval() or Function() calls
+ * - Avoid catastrophic backtracking patterns
+ * - Use only approved RegexBuilder methods
+ *
+ * @param positiveExamples - Strings that must match the pattern
+ * @param negativeExamples - Strings that must NOT match the pattern
+ * @param context - Optional description of what the pattern is for
+ * @returns Formatted prompt string ready for LLM consumption
+ * @example
+ * ```typescript
+ * const prompt = generateProposalPrompt(
+ *   ["user@example.com", "test@test.org"],
+ *   ["@example.com", "not-email"],
+ *   "email addresses"
+ * );
+ * // Prompt includes API reference, examples, and constraints
+ * // LLM will generate: RegexBuilder.charClass("a-z0-9._%+-").oneOrMore()...
+ * ```
  */
 export const generateProposalPrompt = (
   positiveExamples: readonly string[],
@@ -108,7 +153,38 @@ RegexBuilder
 Generate the pattern now:`;
 
 /**
- * Generate a prompt for pattern refinement
+ * Generate a pattern refinement prompt based on test failures
+ *
+ * Creates a prompt that helps the LLM fix a pattern that failed some test cases.
+ * The prompt provides the original pattern, its reasoning, and detailed failure
+ * information to guide the LLM toward targeted fixes.
+ *
+ * **Refinement Strategy**:
+ * - Shows what failed and why (too restrictive vs too permissive)
+ * - Maintains context from original reasoning
+ * - Encourages minimal, targeted changes
+ * - Preserves passing tests while fixing failures
+ *
+ * **Use Case**: Step 3 of the AI development workflow (Propose → Test → Refine)
+ *
+ * @param currentPattern - The RegexBuilder code that needs refinement
+ * @param failedTests - Array of test cases that failed with details
+ * @param reasoning - Original reasoning for why the pattern was created
+ * @returns Refinement prompt with failure analysis and guidance
+ * @example
+ * ```typescript
+ * const prompt = generateRefinementPrompt(
+ *   "RegexBuilder.digit().exactly(3)",
+ *   [{
+ *     input: "1234",
+ *     shouldMatch: true,
+ *     actuallyMatched: false  // Pattern too restrictive
+ *   }],
+ *   "Pattern for 3-digit numbers"
+ * );
+ * // LLM sees: "Pattern is too restrictive - should match but doesn't"
+ * // LLM generates: RegexBuilder.digit().atLeast(3)
+ * ```
  */
 export const generateRefinementPrompt = (
   currentPattern: string,
@@ -158,6 +234,41 @@ Generate the refined pattern:`;
 
 /**
  * Parse LLM response to extract RegexBuilder code
+ *
+ * Extracts clean RegexBuilder code from LLM responses that may contain:
+ * - Markdown code blocks (```typescript or ```ts)
+ * - Explanatory text before/after code
+ * - Inline RegexBuilder patterns
+ *
+ * **Parsing Strategy** (in priority order):
+ * 1. Extract from ```typescript or ```ts code blocks
+ * 2. Find RegexBuilder pattern followed by blank line/end
+ * 3. Return full response if it contains RegexBuilder
+ * 4. Return null if no RegexBuilder code found
+ *
+ * @param response - Raw LLM response text
+ * @returns Extracted RegexBuilder code or null if not found
+ * @example
+ * ```typescript
+ * // Case 1: Markdown code block
+ * const code1 = parseRegexBuilderCode(`
+ *   Here's the pattern:
+ *   \`\`\`typescript
+ *   RegexBuilder.digit().oneOrMore()
+ *   \`\`\`
+ * `);
+ * // Returns: "RegexBuilder.digit().oneOrMore()"
+ *
+ * // Case 2: Inline pattern
+ * const code2 = parseRegexBuilderCode(
+ *   "RegexBuilder.lit('test').capture('name')"
+ * );
+ * // Returns: "RegexBuilder.lit('test').capture('name')"
+ *
+ * // Case 3: No pattern
+ * const code3 = parseRegexBuilderCode("I cannot help with that.");
+ * // Returns: null
+ * ```
  */
 export const parseRegexBuilderCode = (response: string): string | null => {
   // Try to extract code from markdown code blocks
@@ -183,7 +294,35 @@ export const parseRegexBuilderCode = (response: string): string | null => {
 };
 
 /**
- * Validate that the LLM response is valid RegexBuilder code
+ * Validate LLM-generated code for safety and correctness
+ *
+ * Performs security and structural validation on code before interpretation.
+ * This prevents code injection and ensures only safe RegexBuilder patterns
+ * are executed.
+ *
+ * **Security Checks**:
+ * - Rejects code containing `eval()` or `Function()` constructors
+ * - Ensures RegexBuilder API is used (not raw strings)
+ * - Validates at least one valid method is called
+ *
+ * **Validation Rules**:
+ * - Must contain "RegexBuilder"
+ * - Must call at least one valid API method
+ * - Must not contain dangerous functions
+ *
+ * @param code - The code to validate
+ * @returns true if code is safe and valid, false otherwise
+ * @example
+ * ```typescript
+ * // Valid patterns
+ * validateRegexBuilderCode("RegexBuilder.digit().oneOrMore()");  // true
+ * validateRegexBuilderCode("RegexBuilder.lit('test')");  // true
+ *
+ * // Invalid patterns
+ * validateRegexBuilderCode("const x = /test/");  // false - no RegexBuilder
+ * validateRegexBuilderCode("RegexBuilder; eval('code')");  // false - has eval()
+ * validateRegexBuilderCode("RegexBuilder");  // false - no methods called
+ * ```
  */
 export const validateRegexBuilderCode = (code: string): boolean => {
   // Basic validation

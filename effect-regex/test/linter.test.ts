@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "@effect/vitest";
-import { RegexBuilder, emit } from "../src/core/builder.js";
+import { RegexBuilder } from "../src/core/builder.js";
 import { lint } from "../src/core/linter.js";
 
 describe("Linter", () => {
@@ -251,9 +251,7 @@ describe("Linter", () => {
         true
       );
       expect(result.issues.some((i) => i.code === "RE2_BACKREFS")).toBe(true);
-      expect(result.issues.some((i) => i.code === "RE2_LOOKBEHIND")).toBe(
-        true
-      );
+      expect(result.issues.some((i) => i.code === "RE2_LOOKBEHIND")).toBe(true);
     });
   });
 

@@ -1,16 +1,41 @@
+/**
+ * Pattern emitter - converts AST to regex strings for different dialects
+ *
+ * This module handles the compilation of AST nodes into concrete regex patterns,
+ * with support for multiple regex dialects (JavaScript, RE2, PCRE). It manages
+ * capture group numbering, dialect compatibility checking, and optimization.
+ *
+ * @module core/emitter
+ */
+
 import type { Ast } from "./ast.js";
 import type { RegexBuilder, RegexPattern } from "./builder.js";
 
 /**
- * Dialect-specific features and limitations
+ * Supported regex dialects
+ *
+ * - **js**: JavaScript RegExp (full feature support)
+ * - **re2**: Google RE2 (limited features, linear time guarantee)
+ * - **pcre**: Perl Compatible Regular Expressions (full feature support)
  */
 export type Dialect = "js" | "re2" | "pcre";
 
+/**
+ * Information about dialect capabilities and limitations
+ *
+ * Each dialect has different feature support and constraints.
+ * This helps emit dialect-compatible patterns and warn about unsupported features.
+ */
 interface DialectInfo {
+  /** Whether the dialect supports named capture groups like (?<name>...) */
   readonly supportsNamedGroups: boolean;
+  /** Whether the dialect supports lookbehind assertions (?<=...) */
   readonly supportsLookbehind: boolean;
+  /** Whether the dialect supports backreferences like \1 or \k<name> */
   readonly supportsBackrefs: boolean;
+  /** Maximum number of capture groups allowed */
   readonly maxGroups: number;
+  /** Human-readable notes about dialect limitations */
   readonly notes: readonly string[];
 }
 
@@ -39,26 +64,56 @@ const DIALECT_INFO: Record<Dialect, DialectInfo> = {
 };
 
 /**
- * Emitter state during pattern compilation
+ * Emitter state tracked during pattern compilation
+ *
+ * Maintains information about capture groups and dialect-specific
+ * constraints as the AST is traversed and emitted.
  */
 interface EmitState {
+  /** Number of capture groups created so far */
   readonly groupCount: number;
+  /** Map of named groups to their group numbers */
   readonly namedGroups: Record<string, number>;
+  /** Accumulated warnings and notes during emission */
   readonly notes: string[];
+  /** Target regex dialect */
   readonly dialect: Dialect;
 }
 
 /**
- * Emit result
+ * Result of emitting a pattern
+ *
+ * Contains the compiled regex string along with metadata about
+ * captures and any warnings generated during compilation.
  */
 interface EmitResult {
+  /** The compiled regex pattern string */
   readonly pattern: string;
+  /** Map of capture names/numbers to their positions */
   readonly captureMap: Record<string, number | number[]>;
+  /** Warnings or notes generated during compilation */
   readonly notes: readonly string[];
 }
 
 /**
- * Main emit function with dialect support
+ * Main emit function - converts AST to regex pattern string
+ *
+ * Compiles a RegexBuilder AST into a concrete regex pattern string,
+ * with support for multiple dialects and optional anchoring.
+ *
+ * @param builder - The RegexBuilder to emit
+ * @param dialect - Target regex dialect (default: "js")
+ * @param anchor - Whether to add ^ and $ anchors (default: false)
+ * @returns RegexPattern with pattern string, AST, and metadata
+ * @example
+ * ```typescript
+ * const builder = RegexBuilder.digit().oneOrMore();
+ * const pattern = emit(builder, "js");
+ * // pattern.pattern === "\\d+"
+ *
+ * const anchored = emit(builder, "js", true);
+ * // anchored.pattern === "^\\d+$"
+ * ```
  */
 export const emit = (
   builder: RegexBuilder,

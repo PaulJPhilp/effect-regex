@@ -11,25 +11,41 @@
 import type { Ast as RegexAST } from "./ast.js";
 
 /**
- * Optimization result with metrics
+ * Result of pattern optimization with performance metrics
+ *
+ * Provides the optimized AST along with detailed metrics about
+ * which passes were applied and how much the pattern was simplified.
  */
 export interface OptimizationResult {
+  /** The optimized AST */
   readonly optimized: RegexAST;
+  /** Names of optimization passes that made changes */
   readonly passesApplied: readonly string[];
+  /** Number of AST nodes reduced (beforeSize - afterSize) */
   readonly nodesReduced: number;
+  /** Total AST nodes before optimization */
   readonly beforeSize: number;
+  /** Total AST nodes after optimization */
   readonly afterSize: number;
 }
 
 /**
- * Optimization configuration
+ * Configuration options for pattern optimization
+ *
+ * Control which optimization passes are applied and iteration limits.
+ * All passes are enabled by default for maximum optimization.
  */
 export interface OptimizationOptions {
-  readonly constantFolding?: boolean; // Default: true
-  readonly quantifierSimplification?: boolean; // Default: true
-  readonly characterClassMerging?: boolean; // Default: true
-  readonly alternationDedup?: boolean; // Default: true
-  readonly maxPasses?: number; // Default: 5
+  /** Merge adjacent literals in sequences (default: true) */
+  readonly constantFolding?: boolean;
+  /** Simplify redundant quantifiers (default: true) */
+  readonly quantifierSimplification?: boolean;
+  /** Merge alternating character classes (default: true) */
+  readonly characterClassMerging?: boolean;
+  /** Remove duplicate alternatives (default: true) */
+  readonly alternationDedup?: boolean;
+  /** Maximum optimization iterations (default: 5) */
+  readonly maxPasses?: number;
 }
 
 const DEFAULT_OPTIONS: Required<OptimizationOptions> = {
@@ -41,7 +57,14 @@ const DEFAULT_OPTIONS: Required<OptimizationOptions> = {
 };
 
 /**
- * Count AST nodes (for metrics)
+ * Count total AST nodes in a tree
+ *
+ * Recursively traverses the AST and counts all nodes.
+ * Used to measure pattern complexity and optimization effectiveness.
+ *
+ * @param ast - The AST to count nodes in
+ * @returns Total number of nodes in the tree
+ * @internal
  */
 function countNodes(ast: RegexAST): number {
   switch (ast.type) {
@@ -71,9 +94,18 @@ function countNodes(ast: RegexAST): number {
 
 /**
  * Optimization Pass 1: Constant Folding
- * Merges adjacent literal nodes in sequences
  *
- * Example: seq(lit("hello"), lit(" "), lit("world")) → lit("hello world")
+ * Merges adjacent literal nodes in sequences to reduce AST complexity.
+ * This is particularly effective for patterns built from multiple string literals.
+ *
+ * @param ast - The AST to optimize
+ * @returns Optimized AST with merged literals
+ * @example
+ * ```typescript
+ * // Before: seq(lit("hello"), lit(" "), lit("world"))
+ * // After:  lit("hello world")
+ * ```
+ * @internal
  */
 function constantFolding(ast: RegexAST): RegexAST {
   switch (ast.type) {
@@ -138,9 +170,18 @@ function constantFolding(ast: RegexAST): RegexAST {
 
 /**
  * Optimization Pass 2: Quantifier Simplification
- * Removes redundant nested quantifiers
  *
- * Example: q(q(digit, 1, inf), 1, inf) → q(digit, 1, inf)
+ * Removes redundant nested quantifiers and simplifies {1,1} quantifiers.
+ * When quantifiers are nested, their repetition counts are multiplied together.
+ *
+ * @param ast - The AST to optimize
+ * @returns Optimized AST with simplified quantifiers
+ * @example
+ * ```typescript
+ * // Nested quantifiers: q(q(digit, 1, inf), 1, inf) → q(digit, 1, inf)
+ * // Trivial quantifier: q(digit, 1, 1) → digit
+ * ```
+ * @internal
  */
 function quantifierSimplification(ast: RegexAST): RegexAST {
   switch (ast.type) {
@@ -212,9 +253,18 @@ function quantifierSimplification(ast: RegexAST): RegexAST {
 
 /**
  * Optimization Pass 3: Character Class Merging
- * Merges alternations of character classes into a single class
  *
- * Example: alt(cls("a-z"), cls("A-Z")) → cls("a-zA-Z")
+ * Merges alternations of non-negated character classes into a single class.
+ * This reduces alternation complexity and improves regex engine performance.
+ *
+ * @param ast - The AST to optimize
+ * @returns Optimized AST with merged character classes
+ * @example
+ * ```typescript
+ * // Before: alt(cls("a-z"), cls("A-Z"))
+ * // After:  cls("a-zA-Z")
+ * ```
+ * @internal
  */
 function characterClassMerging(ast: RegexAST): RegexAST {
   switch (ast.type) {
@@ -283,9 +333,18 @@ function characterClassMerging(ast: RegexAST): RegexAST {
 
 /**
  * Optimization Pass 4: Alternation Deduplication
- * Removes duplicate alternatives
  *
- * Example: alt(lit("test"), lit("test"), lit("demo")) → alt(lit("demo"), lit("test"))
+ * Removes duplicate alternatives from alternation nodes.
+ * Uses JSON serialization to detect structurally identical alternatives.
+ *
+ * @param ast - The AST to optimize
+ * @returns Optimized AST with deduplicated alternatives
+ * @example
+ * ```typescript
+ * // Before: alt(lit("test"), lit("test"), lit("demo"))
+ * // After:  alt(lit("demo"), lit("test"))
+ * ```
+ * @internal
  */
 function alternationDeduplication(ast: RegexAST): RegexAST {
   switch (ast.type) {
@@ -344,7 +403,14 @@ function alternationDeduplication(ast: RegexAST): RegexAST {
 }
 
 /**
- * Apply a single optimization pass
+ * Apply a single optimization pass by name
+ *
+ * Dispatcher function that routes to the appropriate optimization pass.
+ *
+ * @param ast - The AST to optimize
+ * @param passName - Name of the pass to apply
+ * @returns Optimized AST
+ * @internal
  */
 function applyPass(ast: RegexAST, passName: string): RegexAST {
   switch (passName) {
@@ -362,7 +428,15 @@ function applyPass(ast: RegexAST, passName: string): RegexAST {
 }
 
 /**
- * Check if two ASTs are equal (for fixed-point detection)
+ * Check if two ASTs are structurally equal
+ *
+ * Uses JSON serialization to detect structural equality.
+ * Used to detect when optimization passes reach a fixed point.
+ *
+ * @param a - First AST
+ * @param b - Second AST
+ * @returns true if ASTs are structurally identical
+ * @internal
  */
 function astEquals(a: RegexAST, b: RegexAST): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -370,6 +444,55 @@ function astEquals(a: RegexAST, b: RegexAST): boolean {
 
 /**
  * Optimize a regex AST with multiple passes until fixed point
+ *
+ * Applies configurable optimization passes to reduce pattern complexity:
+ * - **Constant Folding**: Merges adjacent literals (e.g., "hello" + "world" → "helloworld")
+ * - **Quantifier Simplification**: Removes redundant quantifiers (e.g., (a+)+ → a+)
+ * - **Character Class Merging**: Combines alternating classes (e.g., [a-z]|[A-Z] → [a-zA-Z])
+ * - **Alternation Deduplication**: Removes duplicate alternatives (e.g., a|a → a)
+ *
+ * Optimization runs iteratively until a fixed point is reached or max passes exhausted.
+ *
+ * @param ast - The regex AST to optimize
+ * @param options - Optimization configuration (defaults: all passes enabled, max 5 passes)
+ * @returns Optimization result with optimized AST and metrics
+ *
+ * @example
+ * ```typescript
+ * const ast = seq(lit("hello"), lit(" "), lit("world"));
+ * const result = optimize(ast);
+ * // result.optimized: lit("hello world")
+ * // result.passesApplied: ["constantFolding"]
+ * // result.nodesReduced: 2
+ * ```
+ */
+/**
+ * Optimize a regex AST using multiple optimization passes
+ *
+ * Applies configurable optimization passes iteratively until a fixed point
+ * is reached or the maximum iteration limit is hit. Returns detailed metrics
+ * about the optimization process.
+ *
+ * The optimizer applies four main passes:
+ * 1. **Constant Folding**: Merges adjacent literals
+ * 2. **Quantifier Simplification**: Removes redundant quantifiers
+ * 3. **Character Class Merging**: Combines alternating character classes
+ * 4. **Alternation Deduplication**: Removes duplicate alternatives
+ *
+ * @param ast - The regex AST to optimize
+ * @param options - Optimization configuration (all passes enabled by default)
+ * @returns Optimization result with optimized AST and metrics
+ * @example
+ * ```typescript
+ * const ast = seq(lit("hello"), lit(" "), lit("world"));
+ * const result = optimize(ast);
+ * // result.optimized === lit("hello world")
+ * // result.nodesReduced === 2
+ * // result.passesApplied === ["constantFolding"]
+ *
+ * // Disable specific optimizations
+ * const result2 = optimize(ast, { constantFolding: false });
+ * ```
  */
 export function optimize(
   ast: RegexAST,
@@ -426,7 +549,20 @@ export function optimize(
 }
 
 /**
- * Optimize with a single specific pass (for testing/debugging)
+ * Apply a single optimization pass for testing or debugging
+ *
+ * Useful for understanding the effect of individual optimization passes
+ * or for testing optimization logic in isolation.
+ *
+ * @param ast - The regex AST to optimize
+ * @param passName - Name of the optimization pass to apply
+ * @returns AST after applying the single pass
+ * @example
+ * ```typescript
+ * const ast = seq(lit("hello"), lit(" "), lit("world"));
+ * const optimized = optimizeWithPass(ast, "constantFolding");
+ * // optimized === lit("hello world")
+ * ```
  */
 export function optimizeWithPass(
   ast: RegexAST,

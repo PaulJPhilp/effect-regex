@@ -25,7 +25,7 @@ class MCPClient {
   >();
 
   constructor() {
-    this.process = spawn("node", ["dist/server.cjs"], {
+    this.process = spawn("node", ["dist/mcp/server.cjs"], {
       stdio: ["pipe", "pipe", "pipe"],
       cwd: process.cwd(),
     });
@@ -379,5 +379,116 @@ describe("MCP Server E2E", () => {
     expect(Array.isArray(response.issues)).toBe(true);
     expect(response.issues.length).toBeGreaterThan(0);
     expect(response.issues[0]).toHaveProperty("severity", "error");
+  });
+
+  it("should optimize standard library patterns", async () => {
+    const result = await client.sendMessage("tools/call", {
+      name: "optimize_pattern",
+      arguments: {
+        input: {
+          type: "std",
+          name: "email",
+        },
+        dialect: "js",
+      },
+    });
+
+    expect(result).toHaveProperty("content");
+    const response = JSON.parse(result.content[0].text);
+    expect(response).toHaveProperty("pattern");
+    expect(response).toHaveProperty("before");
+    expect(response).toHaveProperty("after");
+    expect(response).toHaveProperty("optimization");
+
+    // Check before/after structure
+    expect(response.before).toHaveProperty("pattern");
+    expect(response.before).toHaveProperty("nodes");
+    expect(response.after).toHaveProperty("pattern");
+    expect(response.after).toHaveProperty("nodes");
+
+    // Check optimization statistics
+    expect(response.optimization).toHaveProperty("nodesReduced");
+    expect(response.optimization).toHaveProperty("reductionPercent");
+    expect(response.optimization).toHaveProperty("passesApplied");
+    expect(response.optimization).toHaveProperty("iterations");
+    expect(Array.isArray(response.optimization.passesApplied)).toBe(true);
+  });
+
+  it("should optimize with custom optimization options", async () => {
+    const result = await client.sendMessage("tools/call", {
+      name: "optimize_pattern",
+      arguments: {
+        input: {
+          type: "std",
+          name: "quotedString",
+        },
+        options: {
+          constantFolding: true,
+          quantifierSimplification: true,
+          characterClassMerging: false,
+          alternationDedup: true,
+          maxPasses: 3,
+        },
+        dialect: "js",
+      },
+    });
+
+    expect(result).toHaveProperty("content");
+    const response = JSON.parse(result.content[0].text);
+    expect(response).toHaveProperty("optimization");
+    expect(response.optimization.iterations).toBeLessThanOrEqual(3);
+  });
+
+  it("should reject pattern string optimization (not yet supported)", async () => {
+    await expect(
+      client.sendMessage("tools/call", {
+        name: "optimize_pattern",
+        arguments: {
+          input: {
+            type: "pattern",
+            pattern: "[a-z]+",
+          },
+          dialect: "js",
+        },
+      })
+    ).rejects.toThrow();
+  });
+
+  it("should reject unknown standard library patterns", async () => {
+    await expect(
+      client.sendMessage("tools/call", {
+        name: "optimize_pattern",
+        arguments: {
+          input: {
+            type: "std",
+            name: "nonexistent_pattern",
+          },
+          dialect: "js",
+        },
+      })
+    ).rejects.toThrow();
+  });
+
+  it("should optimize for different dialects", async () => {
+    const dialects = ["js", "re2", "pcre"];
+
+    for (const dialect of dialects) {
+      const result = await client.sendMessage("tools/call", {
+        name: "optimize_pattern",
+        arguments: {
+          input: {
+            type: "std",
+            name: "integer",
+          },
+          dialect,
+        },
+      });
+
+      expect(result).toHaveProperty("content");
+      const response = JSON.parse(result.content[0].text);
+      expect(response).toHaveProperty("dialect", dialect);
+      expect(response.before).toHaveProperty("pattern");
+      expect(response.after).toHaveProperty("pattern");
+    }
   });
 });

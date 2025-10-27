@@ -1,22 +1,48 @@
 {
-  "name": "@template/cli",
-  "version": "0.0.0",
+  "name": "effect-regex",
+  "version": "0.5.0",
   "type": "module",
   "packageManager": "pnpm@10.14.0",
   "license": "MIT",
-  "description": "A basic Effect CLI application",
+  "description": "Type-safe, composable regex builder for TypeScript using Effect. Build patterns with a fluent API that compiles to multiple dialects (JS, RE2, PCRE).",
   "repository": {
     "type": "git",
-    "url": "<PLACEHOLDER>"
+    "url": "https://github.com/PaulJPhilp/effect-regex"
   },
   "publishConfig": {
     "access": "public",
     "directory": "dist"
   },
+  "keywords": [
+    "regex",
+    "regexp",
+    "pattern",
+    "builder",
+    "effect",
+    "typescript",
+    "type-safe",
+    "ast",
+    "fluent-api",
+    "re2",
+    "pcre",
+    "mcp",
+    "model-context-protocol",
+    "security",
+    "validation",
+    "capture-groups",
+    "backreferences",
+    "lookahead",
+    "lookbehind"
+  ],
+  "author": "Paul J. Philip",
+  "homepage": "https://github.com/PaulJPhilp/effect-regex#readme",
+  "bugs": {
+    "url": "https://github.com/PaulJPhilp/effect-regex/issues"
+  },
   "scripts": {
     "build": "tsup && pnpm copy-package-json",
     "build:ts": "tsup",
-    "build:mcp": "tsup src/mcp/server.ts --format cjs --out-dir dist --clean",
+    "build:mcp": "pnpm build",
     "clean": "rimraf dist/*",
     "check": "tsc -b tsconfig.json",
     "test": "vitest run",
@@ -36,11 +62,12 @@
     "@effect/vitest": "^0.25.1",
     "@modelcontextprotocol/sdk": "^0.5.0",
     "@types/node": "^22.5.2",
+    "@vitest/coverage-v8": "^4.0.3",
     "effect": "^3.17.7",
     "tsup": "^8.2.4",
     "tsx": "^4.19.1",
     "typescript": "^5.6.2",
-    "vitest": "^3.2.0"
+    "vitest": "^4.0.3"
   },
   "patchedDependencies": {
     "@changesets/get-github-info@0.6.0": "patches/@changesets__get-github-info@0.6.0.patch"

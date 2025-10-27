@@ -24,9 +24,9 @@ describe("TryCapture", () => {
 
       const result = emit(pattern, "js");
       expect(result.pattern).toBe("(?<email>[a-zA-Z0-9_]+)");
-      expect(result.notes.some((n) => n.includes("TryCapture validation"))).toBe(
-        true
-      );
+      expect(
+        result.notes.some((n) => n.includes("TryCapture validation"))
+      ).toBe(true);
       expect(result.notes.some((n) => n.includes("must contain @"))).toBe(true);
     });
 
@@ -38,9 +38,7 @@ describe("TryCapture", () => {
 
       const result = emit(pattern, "js");
       expect(result.pattern).toBe("(?<email>[a-zA-Z0-9_]+)");
-      expect(result.notes.some((n) => n.includes("pattern: .*@.*"))).toBe(
-        true
-      );
+      expect(result.notes.some((n) => n.includes("pattern: .*@.*"))).toBe(true);
     });
 
     it("should create unnamed trycapture", () => {
@@ -62,9 +60,7 @@ describe("TryCapture", () => {
         .then(RegexBuilder.backref("word"));
 
       const result = emit(pattern, "js");
-      expect(result.pattern).toBe(
-        "(?<word>[a-zA-Z0-9_]+)[\\s]+\\k<word>"
-      );
+      expect(result.pattern).toBe("(?<word>[a-zA-Z0-9_]+)[\\s]+\\k<word>");
 
       const lintResult = lint(pattern.getAst(), "js");
       expect(lintResult.valid).toBe(true);
@@ -113,9 +109,9 @@ describe("TryCapture", () => {
 
       const lintResult = lint(pattern.getAst(), "re2");
       expect(lintResult.valid).toBe(false);
-      expect(
-        lintResult.issues.some((i) => i.code === "RE2_NAMED_GROUPS")
-      ).toBe(true);
+      expect(lintResult.issues.some((i) => i.code === "RE2_NAMED_GROUPS")).toBe(
+        true
+      );
     });
 
     it("should accept unnamed trycapture in RE2", () => {
@@ -143,9 +139,9 @@ describe("TryCapture", () => {
       const pattern = RegexBuilder.word().oneOrMore().tryCapture("test");
 
       const lintResult = lint(pattern.getAst(), "js");
-      expect(
-        lintResult.issues.some((i) => i.code === "HIGH_COMPLEXITY")
-      ).toBe(false);
+      expect(lintResult.issues.some((i) => i.code === "HIGH_COMPLEXITY")).toBe(
+        false
+      );
     });
 
     it("should handle complex trycapture patterns", () => {
@@ -157,9 +153,9 @@ describe("TryCapture", () => {
 
       const lintResult = lint(pattern.getAst(), "js");
       // Should not trigger complexity warning for reasonable patterns
-      expect(
-        lintResult.issues.some((i) => i.code === "HIGH_COMPLEXITY")
-      ).toBe(false);
+      expect(lintResult.issues.some((i) => i.code === "HIGH_COMPLEXITY")).toBe(
+        false
+      );
     });
   });
 

@@ -1,43 +1,106 @@
+/**
+ * Pattern Testing Framework - validates regex patterns against test cases
+ *
+ * This module provides a comprehensive testing framework for regex patterns,
+ * featuring:
+ * - Match validation (positive and negative test cases)
+ * - Capture group verification (named and numbered groups)
+ * - Timeout detection for catastrophic backtracking
+ * - Performance tracking and warnings
+ * - Multiple dialect support (JavaScript, RE2-sim)
+ *
+ * @module core/tester
+ */
+
 import { Effect } from "effect";
 
 /**
- * Test case for regex validation
+ * Test case specification for regex validation
+ *
+ * Defines what input to test, whether it should match, and optionally
+ * what capture groups should be extracted.
  */
 export interface RegexTestCase {
+  /** Input string to test the pattern against */
   readonly input: string;
+  /** Whether the pattern should match this input */
   readonly shouldMatch: boolean;
+  /** Expected capture groups (by name or number) and their values */
   readonly expectedCaptures?: Record<string, string | string[]>;
 }
 
 /**
  * Result of running a single test case
+ *
+ * Contains detailed information about the test execution,
+ * including match status, captures, errors, and timing.
  */
 export interface TestCaseResult {
+  /** Index of this test case in the test suite */
   readonly caseIndex: number;
+  /** Whether this test case passed (match result and captures matched expectations) */
   readonly passed: boolean;
+  /** Whether the pattern matched the input */
   readonly matched: boolean;
+  /** Whether the pattern was expected to match */
   readonly expectedMatch: boolean;
+  /** Actual capture groups extracted (if pattern matched) */
   readonly captures?: Record<string, string | string[]>;
+  /** Expected capture groups from the test case */
   readonly expectedCaptures?: Record<string, string | string[]>;
+  /** Error message if test case execution failed */
   readonly error?: string;
+  /** Whether this test case exceeded the timeout */
   readonly timedOut: boolean;
+  /** Execution time in milliseconds */
   readonly durationMs: number;
 }
 
 /**
- * Overall test result
+ * Aggregated results from running a test suite
+ *
+ * Provides statistics, failure details, timing, and warnings
+ * for an entire test suite run.
  */
 export interface TestResult {
+  /** Total number of test cases */
   readonly total: number;
+  /** Number of test cases that passed */
   readonly passed: number;
+  /** Number of test cases that failed */
   readonly failed: number;
+  /** Detailed results for failed test cases only */
   readonly failures: readonly TestCaseResult[];
+  /** Total execution time in milliseconds */
   readonly timingMs: number;
+  /** Performance warnings and other non-fatal issues */
   readonly warnings: readonly string[];
 }
 
 /**
  * Test a regex pattern against a suite of test cases
+ *
+ * Runs all test cases with timeout protection and performance tracking.
+ * Each test case is validated for match correctness and capture group accuracy.
+ * Catastrophic backtracking patterns are detected via timeout mechanism.
+ *
+ * @param pattern - Regex pattern string to test
+ * @param dialect - Target dialect (js, re2-sim, or re2)
+ * @param cases - Array of test cases to run
+ * @param timeoutMs - Timeout in milliseconds for each test case (default: 100)
+ * @returns Effect that yields a TestResult with aggregated statistics
+ * @example
+ * ```typescript
+ * const pattern = "(?<greeting>\\w+) (?<subject>\\w+)";
+ * const cases: RegexTestCase[] = [
+ *   { input: "hello world", shouldMatch: true, expectedCaptures: {
+ *     greeting: "hello", subject: "world"
+ *   }},
+ *   { input: "no-match", shouldMatch: false }
+ * ];
+ * const result = await Effect.runPromise(testRegex(pattern, "js", cases));
+ * // result.passed === 2, result.failed === 0
+ * ```
  */
 export const testRegex = (
   pattern: string,
@@ -150,7 +213,15 @@ export const testRegex = (
 };
 
 /**
- * Run a single test case
+ * Execute a single test case against a compiled regex
+ *
+ * Tests the pattern match and validates capture groups if expected.
+ * Returns partial result that will be augmented with timing and index.
+ *
+ * @param regex - Compiled RegExp object
+ * @param testCase - Test case specification
+ * @returns Promise resolving to partial test case result
+ * @internal
  */
 const runTestCase = async (
   regex: RegExp,
@@ -216,7 +287,15 @@ const runTestCase = async (
 };
 
 /**
- * Check if actual captures match expected captures
+ * Validate that actual captures match expected captures
+ *
+ * Compares capture group values, supporting both single strings
+ * and arrays of strings for multi-match scenarios.
+ *
+ * @param actual - Actual capture groups extracted from the match
+ * @param expected - Expected capture groups from the test case
+ * @returns true if all expected captures are present and match
+ * @internal
  */
 const checkCapturesMatch = (
   actual: Record<string, string | string[]>,
@@ -248,6 +327,19 @@ const checkCapturesMatch = (
 
 /**
  * Load and run test corpora from JSON files
+ *
+ * Placeholder for loading test cases from external files.
+ * In a full implementation, would read JSON corpora and run all tests.
+ *
+ * @param corporaPath - Path to corpora directory or file
+ * @param dialect - Target regex dialect
+ * @param timeoutMs - Timeout per test case in milliseconds
+ * @returns Promise resolving to map of test suite names to results
+ * @example
+ * ```typescript
+ * const results = await runCorpora("./test-data/email.json", "js");
+ * // results["email-basic"].passed === 10
+ * ```
  */
 export const runCorpora = async (
   corporaPath: string,
@@ -260,7 +352,14 @@ export const runCorpora = async (
 };
 
 /**
- * Validate test case input
+ * Validate test case structure and data types
+ *
+ * Checks that a test case has all required fields with correct types.
+ * Returns array of error messages, empty if valid.
+ *
+ * @param testCase - Test case to validate
+ * @returns Array of validation error messages (empty if valid)
+ * @internal
  */
 const validateTestCase = (testCase: RegexTestCase): string[] => {
   const errors: string[] = [];

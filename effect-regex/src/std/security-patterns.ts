@@ -1,4 +1,4 @@
-import { digit, RegexBuilder, word } from "../core/builder.js";
+import { digit, RegexBuilder } from "../core/builder.js";
 
 /**
  * Security-focused and validation patterns
@@ -63,7 +63,10 @@ export const hostname = RegexBuilder.charClass("A-Za-z0-9")
  * Examples: "document.txt", "my-file.pdf", "data_2024.csv"
  * Use for: filename validation
  */
-export const safeFilename = RegexBuilder.charClass("<>:\"\\/|?*\\x00-\\x1F", true)
+export const safeFilename = RegexBuilder.charClass(
+  '<>:"\\/|?*\\x00-\\x1F',
+  true
+)
   .oneOrMore()
   .group("safeFilename");
 
@@ -122,11 +125,7 @@ export const decimal = digit()
 export const signedNumber = RegexBuilder.charClass("+-")
   .optional()
   .then(digit().zeroOrMore())
-  .then(
-    RegexBuilder.lit(".")
-      .then(digit().oneOrMore())
-      .optional()
-  )
+  .then(RegexBuilder.lit(".").then(digit().oneOrMore()).optional())
   .group("signedNum");
 
 /**
@@ -136,12 +135,20 @@ export const signedNumber = RegexBuilder.charClass("+-")
  * Note: Simplified pattern, doesn't handle all edge cases
  */
 export const htmlTag = RegexBuilder.lit("<")
-  .then(RegexBuilder.charClass("A-Z").then(RegexBuilder.charClass("A-Z0-9").zeroOrMore()))
+  .then(
+    RegexBuilder.charClass("A-Z").then(
+      RegexBuilder.charClass("A-Z0-9").zeroOrMore()
+    )
+  )
   .then(RegexBuilder.charClass(">", true).zeroOrMore())
   .then(RegexBuilder.lit(">"))
   .then(RegexBuilder.raw(".*?")) // Non-greedy content match
   .then(RegexBuilder.lit("</"))
-  .then(RegexBuilder.charClass("A-Z").then(RegexBuilder.charClass("A-Z0-9").zeroOrMore()))
+  .then(
+    RegexBuilder.charClass("A-Z").then(
+      RegexBuilder.charClass("A-Z0-9").zeroOrMore()
+    )
+  )
   .then(RegexBuilder.lit(">"))
   .group("htmlTag");
 
@@ -152,7 +159,7 @@ export const htmlTag = RegexBuilder.lit("<")
  */
 export const windowsPath = RegexBuilder.charClass("A-Z")
   .then(RegexBuilder.lit(":"))
-  .then(RegexBuilder.charClass("\\\\/:*?\"<>|\\r\\n", true).oneOrMore())
+  .then(RegexBuilder.charClass('\\\\/:*?"<>|\\r\\n', true).oneOrMore())
   .group("winPath");
 
 /**
@@ -256,7 +263,8 @@ export const SECURITY_PATTERNS = {
   },
   safeText: {
     pattern: safeText,
-    description: "Matches safe simple text (letters, numbers, space, basic punctuation)",
+    description:
+      "Matches safe simple text (letters, numbers, space, basic punctuation)",
     examples: ["Hello, World!", "Test-123", "User's data"],
     dialect: "universal" as const,
   },
@@ -286,7 +294,8 @@ export const SECURITY_PATTERNS = {
   },
   creditCard: {
     pattern: creditCard,
-    description: "Matches credit card numbers (13-16 digits, with optional spaces/hyphens)",
+    description:
+      "Matches credit card numbers (13-16 digits, with optional spaces/hyphens)",
     examples: ["4532-1488-0343-6467", "4532 1488 0343 6467"],
     dialect: "universal" as const,
   },

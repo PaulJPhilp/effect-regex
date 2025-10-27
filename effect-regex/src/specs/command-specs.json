@@ -58,12 +58,7 @@
           "git commit -a --amend -m fix src/main.ts",
           "git commit --message=\"feat: add tests\" test.ts utils.ts"
         ],
-        "negative": [
-          "git commit",
-          "git commit -m",
-          "git status",
-          "git add ."
-        ]
+        "negative": ["git commit", "git commit -m", "git status", "git add ."]
       }
     },
 
@@ -148,11 +143,7 @@
           "docker run -it --rm -p 3000:3000 -v /app:/app node:18 npm start",
           "docker run ubuntu ls -la"
         ],
-        "negative": [
-          "docker run",
-          "docker pull ubuntu",
-          "docker ps"
-        ]
+        "negative": ["docker run", "docker pull ubuntu", "docker ps"]
       }
     },
 
@@ -224,6 +215,4 @@
       }
     }
   }
-}</content>
-</xai:function_call: mx: create_file>
-<parameter name="path">/Users/paul/Projects/effect-regex/effect-regex/.github/workflows/ci.yml
+}
