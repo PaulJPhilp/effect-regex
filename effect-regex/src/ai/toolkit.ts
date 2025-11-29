@@ -381,8 +381,8 @@ export const testPattern = (
     const regexResult = emit(pattern);
     const testResult = yield* testRegex(
       regexResult.pattern,
-      dialect,
       testCases,
+      dialect,
       timeoutMs
     );
     return testResult;

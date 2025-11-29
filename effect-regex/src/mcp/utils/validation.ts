@@ -83,7 +83,9 @@ export function validatePattern(
             `Invalid regex pattern: ${(error as Error).message}`
           )
       ),
-      Effect.map(() => {})
+      Effect.map(() => {
+        // Validation passed
+      })
     );
   });
 }

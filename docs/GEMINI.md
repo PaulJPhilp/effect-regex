@@ -49,3 +49,12 @@ The following commands should be run from the `effect-regex/` directory.
 - Before committing, run `pnpm check` and `pnpm test` to ensure the code is correct and passes all tests.
 - Follow the coding standards and patterns outlined in `EFFECT.md` and `TYPESCRIPT.md`.
 - For detailed development commands and guidelines for AI assistants, refer to `AGENTS.md`.
+
+## Effect Patterns Reference
+
+For Effect.ts patterns, see the workspace root rules:
+- **Beginner**: `/Users/paul/Projects/.cursor/rules/EFFECT_BEGINNER_PATTERNS.md`
+- **Intermediate**: `/Users/paul/Projects/.cursor/rules/EFFECT_INTERMEDIATE_PATTERNS.md`
+- **Advanced**: `/Users/paul/Projects/.cursor/rules/EFFECT_ADVANCED_PATTERNS.md`
+
+These rules are automatically applied when working with TypeScript files.

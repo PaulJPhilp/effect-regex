@@ -104,8 +104,8 @@ export interface TestResult {
  */
 export const testRegex = (
   pattern: string,
-  dialect: "js" | "re2-sim" | "re2" = "js",
   cases: readonly RegexTestCase[],
+  dialect: "js" | "re2-sim" | "re2" = "js",
   timeoutMs = 100
 ): Effect<never, never, TestResult> => {
   return Effect.gen(function* () {
@@ -223,10 +223,10 @@ export const testRegex = (
  * @returns Promise resolving to partial test case result
  * @internal
  */
-const runTestCase = async (
+const runTestCase = (
   regex: RegExp,
   testCase: RegexTestCase
-): Promise<Omit<TestCaseResult, "caseIndex" | "timedOut" | "durationMs">> => {
+): Omit<TestCaseResult, "caseIndex" | "timedOut" | "durationMs"> => {
   const match = regex.exec(testCase.input);
   const matched = match !== null;
 
@@ -341,11 +341,11 @@ const checkCapturesMatch = (
  * // results["email-basic"].passed === 10
  * ```
  */
-export const runCorpora = async (
+export const runCorpora = (
   corporaPath: string,
   dialect: "js" | "re2-sim" | "re2" = "js",
   timeoutMs = 100
-): Promise<Record<string, TestResult>> => {
+): Record<string, TestResult> => {
   // For now, return empty results - would need file system access in real implementation
   // This is a placeholder for the corpora functionality
   return {};
@@ -361,7 +361,7 @@ export const runCorpora = async (
  * @returns Array of validation error messages (empty if valid)
  * @internal
  */
-const validateTestCase = (testCase: RegexTestCase): string[] => {
+const _validateTestCase = (testCase: RegexTestCase): string[] => {
   const errors: string[] = [];
 
   if (!testCase.input || typeof testCase.input !== "string") {

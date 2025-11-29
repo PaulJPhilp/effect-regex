@@ -6,6 +6,7 @@
 
 import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { Effect } from "effect";
+import type { AstNode } from "../../core/ast.js";
 import { emit, RegexBuilder } from "../../core/builder.js";
 import { optimize } from "../../core/optimizer.js";
 import { STANDARD_PATTERNS } from "../../std/patterns.js";
@@ -35,8 +36,8 @@ export const handleOptimizePattern: ToolHandler<OptimizePatternArgs, any> = (
 
     const { input, options = {}, dialect = "js" } = args;
 
-    let ast;
-    let patternName;
+    let ast: AstNode;
+    let patternName: string;
 
     if (input.type === "std") {
       const stdPattern =

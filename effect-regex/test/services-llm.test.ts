@@ -10,7 +10,7 @@ import { LLMServiceMock } from "../src/services/llm.js";
 import { LLMService } from "../src/services/types.js";
 
 // Mock llm-client module
-const mockLLMClient = {
+const _mockLLMClient = {
   callLLMWithRetry: (prompt: string) =>
     Effect.succeed("RegexBuilder.lit('test').oneOrMore()"),
   isLLMAvailable: () => Effect.succeed(true),

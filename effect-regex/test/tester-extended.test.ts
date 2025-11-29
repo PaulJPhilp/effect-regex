@@ -175,7 +175,7 @@ describe("Regex Tester - Extended Coverage", () => {
       const pattern = "(a+)+b";
       const testCases: RegexTestCase[] = [
         {
-          input: "a".repeat(30) + "c",
+          input: `${"a".repeat(30)}c`,
           shouldMatch: false,
         },
       ];

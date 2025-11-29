@@ -41,7 +41,7 @@ describe("MCP Validation Utilities", () => {
 
     it("should reject too many test cases", () =>
       Effect.gen(function* () {
-        const cases = Array(LIMITS.MAX_TEST_CASES + 1).fill({ input: "x" });
+        const cases = new Array(LIMITS.MAX_TEST_CASES + 1).fill({ input: "x" });
         const result = yield* Effect.either(validateInputEffect({ cases }));
 
         expect(result._tag).toBe("Left");
@@ -53,7 +53,7 @@ describe("MCP Validation Utilities", () => {
 
     it("should accept exactly max test cases", () =>
       Effect.gen(function* () {
-        const cases = Array(LIMITS.MAX_TEST_CASES).fill({ input: "x" });
+        const cases = new Array(LIMITS.MAX_TEST_CASES).fill({ input: "x" });
         const result = yield* validateInputEffect({ cases });
         expect(result).toBeUndefined();
       }));
@@ -126,7 +126,7 @@ describe("MCP Validation Utilities", () => {
 
     it("should reject too many positive examples", () =>
       Effect.gen(function* () {
-        const tooMany = Array(LIMITS.MAX_POSITIVE_EXAMPLES + 1).fill("x");
+        const tooMany = new Array(LIMITS.MAX_POSITIVE_EXAMPLES + 1).fill("x");
         const result = yield* Effect.either(validateExamples(tooMany, []));
 
         expect(result._tag).toBe("Left");
@@ -137,7 +137,7 @@ describe("MCP Validation Utilities", () => {
 
     it("should reject too many negative examples", () =>
       Effect.gen(function* () {
-        const tooMany = Array(LIMITS.MAX_NEGATIVE_EXAMPLES + 1).fill("x");
+        const tooMany = new Array(LIMITS.MAX_NEGATIVE_EXAMPLES + 1).fill("x");
         const result = yield* Effect.either(
           validateExamples(["valid"], tooMany)
         );
@@ -162,14 +162,14 @@ describe("MCP Validation Utilities", () => {
 
     it("should accept exactly max positive examples", () =>
       Effect.gen(function* () {
-        const max = Array(LIMITS.MAX_POSITIVE_EXAMPLES).fill("x");
+        const max = new Array(LIMITS.MAX_POSITIVE_EXAMPLES).fill("x");
         const result = yield* validateExamples(max, []);
         expect(result).toBeUndefined();
       }));
 
     it("should accept exactly max negative examples", () =>
       Effect.gen(function* () {
-        const max = Array(LIMITS.MAX_NEGATIVE_EXAMPLES).fill("y");
+        const max = new Array(LIMITS.MAX_NEGATIVE_EXAMPLES).fill("y");
         const result = yield* validateExamples(["x"], max);
         expect(result).toBeUndefined();
       }));

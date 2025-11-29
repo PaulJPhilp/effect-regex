@@ -29,7 +29,7 @@ export const handleExplainRegex: ToolHandler<ExplainRegexArgs, any> = (
   return Effect.gen(function* () {
     yield* validateInputEffect(args);
 
-    const { pattern: patternStr, dialect = "js", format = "tree" } = args;
+    const { pattern: patternStr, dialect = "js" } = args;
 
     // Note: Full regex string → AST parsing is deferred to post-1.0 release
     // For now, this tool returns a basic explanation stub

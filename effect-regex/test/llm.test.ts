@@ -45,7 +45,7 @@ describe("LLM Client", () => {
   it("should fail with LLMConfigError when API key is missing", async () => {
     // Save original env
     const originalKey = process.env.ANTHROPIC_API_KEY;
-    delete process.env.ANTHROPIC_API_KEY;
+    process.env.ANTHROPIC_API_KEY = undefined;
 
     const result = await Effect.runPromise(
       Effect.either(callLLM("test prompt", { provider: "anthropic" }))
@@ -146,7 +146,7 @@ describe("Smart Pattern Proposal", () => {
   it("should fall back to heuristics when LLM unavailable", async () => {
     // Save original env
     const originalKey = process.env.ANTHROPIC_API_KEY;
-    delete process.env.ANTHROPIC_API_KEY;
+    process.env.ANTHROPIC_API_KEY = undefined;
 
     const result = await Effect.runPromise(
       proposePattern(["hello", "world"], ["123", "456"], "words")

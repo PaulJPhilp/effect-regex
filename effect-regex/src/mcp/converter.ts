@@ -24,7 +24,7 @@ export interface ConversionResult {
 /**
  * Feature compatibility matrix
  */
-const FEATURES = {
+const _FEATURES = {
   namedGroups: {
     js: true,
     re2: false, // RE2 doesn't support named groups

@@ -135,8 +135,8 @@ export interface ValidationService {
    */
   readonly test: (
     pattern: string,
-    dialect: "js" | "re2-sim" | "re2",
     cases: readonly RegexTestCase[],
+    dialect?: "js" | "re2-sim" | "re2",
     timeoutMs?: number
   ) => Effect.Effect<TestResult, TestExecutionError>;
 

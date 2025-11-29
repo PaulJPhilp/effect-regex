@@ -124,7 +124,8 @@ export const PATTERN_HOSTNAME = /^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$/;
  * Blocks: path traversal, dangerous characters, control characters
  * Allows: standard filename characters
  */
-export const PATTERN_SAFE_FILENAME = /^[^<>:"\\/|?*\x00-\x1F]+$/;
+// biome-ignore lint/suspicious/noControlCharactersInRegex: control chars are intentional for matching
+export const PATTERN_SAFE_FILENAME = /^[^<>:"\\/|?*\u0000-\u001F]+$/;
 
 /**
  * Hex color code validation
@@ -334,6 +335,7 @@ export function extractMatches(pattern: RegExp, input: string): string[] {
   // Reset lastIndex for global patterns
   pattern.lastIndex = 0;
 
+  // biome-ignore lint/suspicious/noAssignInExpressions: necessary for exec loop
   while ((match = pattern.exec(input)) !== null) {
     matches.push(match[0]);
     // Prevent infinite loops on zero-width matches

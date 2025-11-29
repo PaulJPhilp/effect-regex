@@ -222,7 +222,7 @@ switch (command) {
 
     const timeoutArg = args.find((arg) => arg.startsWith("--timeout="));
     const timeout = timeoutArg
-      ? Number.parseInt(timeoutArg.split("=")[1])
+      ? Number.parseInt(timeoutArg.split("=")[1], 10)
       : 100;
 
     try {
@@ -261,7 +261,7 @@ switch (command) {
       }
 
       // Run the tests using Effect
-      const testEffect = testRegex(pattern, dialect, testCases, timeout);
+      const testEffect = testRegex(pattern, testCases, dialect, timeout);
 
       Effect.runPromise(testEffect)
         .then((result) => {

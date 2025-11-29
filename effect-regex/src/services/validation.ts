@@ -17,8 +17,8 @@ import { ValidationService } from "./types.js";
  * Live implementation of ValidationService
  */
 export const ValidationServiceLive = Layer.succeed(ValidationService, {
-  test: (pattern, dialect = "js", cases, timeoutMs = 100) =>
-    coreTestRegex(pattern, dialect, cases, timeoutMs).pipe(
+  test: (pattern, cases, dialect = "js", timeoutMs = 100) =>
+    coreTestRegex(pattern, cases, dialect, timeoutMs).pipe(
       Effect.mapError(
         (error) =>
           new TestExecutionError({

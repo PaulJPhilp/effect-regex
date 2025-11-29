@@ -263,7 +263,7 @@ describe("AI Code Interpreter Security", () => {
 
   describe("Boundary Cases", () => {
     it("should handle very long valid code", () => {
-      const longChain = "RegexBuilder.lit('a')" + ".then('b')".repeat(50);
+      const longChain = `RegexBuilder.lit('a')${".then('b')".repeat(50)}`;
 
       expect(() => interpretRegexBuilderCode(longChain)).not.toThrow();
 
@@ -272,7 +272,7 @@ describe("AI Code Interpreter Security", () => {
     });
 
     it("should reject code exceeding maximum depth", () => {
-      const tooDeep = "RegexBuilder.lit('a')" + ".then('b')".repeat(200);
+      const tooDeep = `RegexBuilder.lit('a')${".then('b')".repeat(200)}`;
 
       expect(() => interpretRegexBuilderCode(tooDeep)).toThrow(
         CodeInterpreterError
@@ -281,7 +281,7 @@ describe("AI Code Interpreter Security", () => {
     });
 
     it("should reject code exceeding size limit", () => {
-      const huge = "RegexBuilder.lit('a')" + ".then('b')".repeat(5000);
+      const huge = `RegexBuilder.lit('a')${".then('b')".repeat(5000)}`;
 
       expect(() => interpretRegexBuilderCode(huge)).toThrow(
         CodeInterpreterError

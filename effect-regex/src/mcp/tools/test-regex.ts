@@ -40,8 +40,8 @@ export const handleTestRegex: ToolHandler<TestRegexArgs, any> = (args) =>
 
     const result = yield* testRegex(
       pattern,
-      dialect as any,
       testCases,
+      dialect as any,
       timeoutMs
     );
 

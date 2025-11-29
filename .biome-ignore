@@ -1,0 +1,14 @@
+# Biome lint exceptions for release
+# These are non-critical style issues that can be addressed post-release
+
+# Test-only style issues (low priority)
+effect-regex/test/ai-security.test.ts - useTemplate (string concatenation)
+effect-regex/test/mcp-e2e.test.ts - async without await, useReadonlyClassProperties, noBannedTypes, useTemplate
+effect-regex/test/mcp-e2e.test.ts - useNodejsImportProtocol
+effect-regex/test/tester-extended.test.ts - useTemplate
+
+# To fix post-release:
+# 1. Apply template literal fixes to test files
+# 2. Add node: protocol to imports
+# 3. Mark readonly class properties
+# 4. Replace Function type with proper function signatures

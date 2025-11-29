@@ -13,3 +13,5 @@ dist/
 .env.development.local
 .env.test.local
 .env.production.local
+temp_regex_test.ts
+temp-regex-test.ts

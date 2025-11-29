@@ -25,7 +25,7 @@ export const handleLintRegex: ToolHandler<LintRegexArgs, any> = (args) => {
   return Effect.gen(function* () {
     yield* validateInputEffect(args);
 
-    const { pattern: patternStr, dialect = "js" } = args;
+    const { pattern: patternStr } = args;
 
     // Try to compile the regex - if it throws, catch it and return invalid result
     const validationResult = yield* Effect.try(

@@ -107,7 +107,7 @@ describe("LLM Client - Extended Coverage", () => {
     it("should not retry LLMConfigError (missing API key)", async () => {
       // Save and remove API key
       const originalKey = process.env.ANTHROPIC_API_KEY;
-      delete process.env.ANTHROPIC_API_KEY;
+      process.env.ANTHROPIC_API_KEY = undefined;
 
       const result = await Effect.runPromise(
         Effect.either(
@@ -188,7 +188,7 @@ describe("LLM Client - Extended Coverage", () => {
     it("should use default config when no config provided", async () => {
       // Save and remove API key to ensure config error
       const originalKey = process.env.ANTHROPIC_API_KEY;
-      delete process.env.ANTHROPIC_API_KEY;
+      process.env.ANTHROPIC_API_KEY = undefined;
 
       const result = await Effect.runPromise(Effect.either(callLLM("test")));
 

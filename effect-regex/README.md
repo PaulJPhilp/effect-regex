@@ -1,6 +1,11 @@
 # effect-regex
 
+[![npm version](https://badge.fury.io/js/effect-regex.svg)](https://www.npmjs.com/package/effect-regex)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A type-safe, composable regex builder for TypeScript using the Effect library. Build complex regex patterns with a fluent API that compiles to multiple dialects (JS, RE2, PCRE).
+
+**Current Version:** 0.5.0 (Initial Public Release)
 
 ## Features
 
@@ -363,8 +368,21 @@ Built with:
 
 ## Status
 
+✅ **v0.5.0 Released** - Available on npm
 ✅ Phase 1 Complete: Backreferences, Assertions, Linter validation
 ✅ Phase 2 Complete: TryCapture with validation metadata
 ✅ Pattern Library: 40+ pre-built patterns
 ✅ Security Patterns: Input validation and injection detection
+✅ MCP Server: 8 tools for AI integration (Grade A- test suite)
+✅ Test Coverage: 473 tests, 83.5% coverage
 🚀 Production Ready
+
+### What's New in v0.5.0
+
+- **npm Package**: Now available at https://www.npmjs.com/package/effect-regex
+- **MCP Server**: Refactored to modular architecture (8 tools, 84 comprehensive tests)
+- **Comprehensive Testing**: 473 tests across 21 test files with 83.5% coverage
+- **Full Documentation**: Complete TSDoc, CHANGELOG, pattern library reference
+- **AI Integration**: MCP tools for pattern generation, optimization, and validation
+
+See [CHANGELOG.md](./CHANGELOG.md) for full release notes.

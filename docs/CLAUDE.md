@@ -4,7 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-effect-regex is a monorepo containing a regex pattern builder and processing toolkit built with the Effect framework. The core philosophy is **deterministic AST-based construction** - patterns are built using a fluent API, represented as an immutable AST, and emit to different regex dialects (JavaScript, RE2, PCRE).
+**effect-regex v0.5.0** - A type-safe, composable regex builder for TypeScript using the Effect framework.
+
+**Status:** ✅ Released on npm (https://www.npmjs.com/package/effect-regex)
+
+The core philosophy is **deterministic AST-based construction** - patterns are built using a fluent API, represented as an immutable AST, and emit to different regex dialects (JavaScript, RE2, PCRE).
+
+### Key Stats
+- **Version:** 0.5.0 (Initial Public Release)
+- **Tests:** 473 tests across 21 test files
+- **Coverage:** 83.5%
+- **Standard Library:** 40+ pre-built patterns
+- **MCP Tools:** 8 tools with Grade A- test suite (84 tests)
 
 ### Monorepo Structure
 
@@ -191,10 +202,14 @@ All patterns in `src/std/patterns.ts` must:
 - Be pure functions
 - Include JSDoc with description and examples
 
-Pattern tiers:
-- **Tier 1** (CLI-focused): quotedString, keyValue, pathSegment, filePathBasic, csvList, integer
-- **Tier 2** (Advanced): uuidV4, semverStrict
-- **Tier 3** (General): ipv4, ipv6Compressed, float, isoDate, isoDateTime
+Pattern categories (40+ total):
+- **General Patterns**: email, URL, UUID v4, semantic versions, phone numbers (US/international)
+- **Colors**: hex, CSS named colors, RGB/RGBA, HSL/HSLA
+- **Network**: IPv4, IPv6, MAC addresses, domains, hostnames
+- **Dates/Times**: ISO 8601, HH:MM:SS formats
+- **Numbers**: integers, floats, decimals
+- **File System**: paths, safe filenames
+- **Security**: input validation, SQL injection detection, path traversal prevention, PII validation
 
 ## Testing
 
@@ -305,7 +320,9 @@ Changes to AST require updates to:
 - Explainer if user-visible (`src/core/explainer.ts`)
 - Optimizer if optimizable (`src/core/optimizer.ts`)
 
-## MCP Server
+## MCP Server (v0.5.0)
+
+**Architecture:** Modular, refactored from 846-line monolith to 14 focused modules (-82% LOC)
 
 The MCP server exposes 8 tools to AI assistants:
 
@@ -313,10 +330,15 @@ The MCP server exposes 8 tools to AI assistants:
 2. `test_regex` - Test patterns with timeout protection
 3. `lint_regex` - Validate dialect compatibility
 4. `convert_regex` - Convert between dialects
-5. `explain_regex` - Generate explanations
-6. `library_list` - List standard patterns
-7. `propose_pattern` - AI-assisted pattern generation
+5. `explain_regex` - Generate explanations (stub implementation)
+6. `library_list` - List and filter standard patterns
+7. `propose_pattern` - AI-assisted pattern generation (Anthropic Claude)
 8. `optimize_pattern` - AST optimization passes
+
+### Test Coverage (Grade A-)
+- **84 MCP-specific tests:** 20 E2E + 31 unit (handlers) + 33 unit (validation)
+- **All tools:** 100% coverage
+- **Test files:** test/mcp-e2e.test.ts, test/mcp-tools.test.ts, test/mcp-validation.test.ts
 
 ### Building and Testing MCP Server
 
@@ -330,14 +352,29 @@ pnpm build:mcp
   "mcpServers": {
     "effect-regex": {
       "command": "node",
-      "args": ["/absolute/path/to/effect-regex/effect-regex/dist/server.cjs"]
+      "args": ["/absolute/path/to/effect-regex/effect-regex/dist/mcp/server.cjs"]
     }
   }
 }
 
 # Test with MCP inspector
-npx @modelcontextprotocol/inspector node dist/server.cjs
+npx @modelcontextprotocol/inspector node dist/mcp/server.cjs
+
+# Run E2E tests
+pnpm test test/mcp-e2e.test.ts
+
+# Run unit tests
+pnpm test test/mcp-tools.test.ts
+pnpm test test/mcp-validation.test.ts
 ```
+
+### Modular Structure (v0.5.0)
+- `src/mcp/server.ts` - Main server (153 lines)
+- `src/mcp/schemas.ts` - Tool definitions
+- `src/mcp/types.ts` - Type definitions and LIMITS
+- `src/mcp/tools/` - 8 modular tool handlers
+- `src/mcp/utils/validation.ts` - Shared validation utilities
+- `src/mcp/converter.ts` - Dialect conversion logic
 
 ## Tooling
 

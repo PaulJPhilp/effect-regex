@@ -29,7 +29,7 @@ export const handleBuildRegex: ToolHandler<BuildRegexArgs, any> = (args) => {
 
     const { input, dialect = "js", anchor = false } = args;
 
-    let result;
+    let result: string;
 
     if (input.type === "std") {
       const stdPattern =

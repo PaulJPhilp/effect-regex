@@ -1,5 +1,5 @@
+import { spawn } from "node:child_process";
 import { describe, expect, it } from "@effect/vitest";
-import { spawn } from "child_process";
 
 // MCP protocol message types
 interface MCPMessage {
@@ -17,11 +17,11 @@ interface MCPResponse {
 }
 
 class MCPClient {
-  private process: any;
+  private readonly process: any;
   private messageId = 1;
-  private responsePromises = new Map<
+  private readonly responsePromises = new Map<
     number,
-    { resolve: Function; reject: Function }
+    { resolve: (value: any) => void; reject: (reason?: any) => void }
   >();
 
   constructor() {
@@ -62,7 +62,7 @@ class MCPClient {
     });
   }
 
-  async sendMessage(method: string, params?: any): Promise<any> {
+  sendMessage(method: string, params?: any): Promise<any> {
     return new Promise((resolve, reject) => {
       const id = this.messageId++;
       const message: MCPMessage = {
@@ -74,7 +74,7 @@ class MCPClient {
 
       this.responsePromises.set(id, { resolve, reject });
 
-      const jsonMessage = JSON.stringify(message) + "\n";
+      const jsonMessage = `${JSON.stringify(message)}\n`;
       this.process.stdin.write(jsonMessage);
 
       // Timeout after 5 seconds
@@ -85,7 +85,7 @@ class MCPClient {
     });
   }
 
-  async close(): Promise<void> {
+  close(): Promise<void> {
     return new Promise((resolve) => {
       this.process.kill();
       this.process.on("close", () => resolve());
