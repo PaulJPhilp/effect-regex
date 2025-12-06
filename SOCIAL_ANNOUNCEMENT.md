@@ -17,7 +17,7 @@ Build patterns with a fluent API that compiles to multiple dialects (JS, RE2, PC
 
 ### Technical Thread
 
-1/ We just released **effect-regex** - a type-safe regex composition library for TypeScript built on the Effect framework.
+1/ We just released **effect-regex** - a type-safe regex composition library for TypeScript built on the Effect framework. Inspired by Swift's Regex Builder pattern, but for TypeScript.
 
 Stop writing raw regex strings. Build patterns with a fluent API that's composable, testable, and type-safe.
 

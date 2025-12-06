@@ -6,7 +6,7 @@ We're excited to announce **effect-regex**, a production-ready regex composition
 
 ## What is effect-regex?
 
-effect-regex provides a fluent, type-safe API for building regular expressions that compile to multiple dialects (JavaScript, RE2, PCRE). Instead of writing raw regex strings, compose patterns using a chainable builder API with full TypeScript support.
+effect-regex provides a fluent, type-safe API for building regular expressions that compile to multiple dialects (JavaScript, RE2, PCRE). Inspired by Swift's Regex Builder pattern, it brings that elegant composition model to TypeScript. Instead of writing raw regex strings, compose patterns using a chainable builder API with full TypeScript support.
 
 ```typescript
 import { Regex } from 'effect-regex';
@@ -30,12 +30,14 @@ const re2Regex = emailPattern.toStringRE2();
 🔧 **Fluent Builder API** - Chainable methods for intuitive pattern composition
 
 📦 **40+ Standard Patterns** - Pre-built, vetted patterns for common use cases:
+
 - General: email, URL, UUID, semantic versions, phone numbers
 - Network: IPv4, IPv6, MAC addresses, domains
 - Dates/Times: ISO 8601, HH:MM:SS
 - Security: SQL injection detection, path traversal prevention, PII validation
 
 🤖 **MCP Server Integration** - 8 tools for AI assistants (Claude, Cline):
+
 - Pattern building and testing
 - Dialect conversion
 - AI-powered pattern generation
@@ -118,6 +120,7 @@ Use effect-regex with Claude Desktop or Cline:
 ```
 
 Available tools:
+
 - `build_regex` - Build from standard library or specs
 - `test_regex` - Validate patterns with test cases
 - `lint_regex` - Check dialect compatibility
@@ -147,14 +150,15 @@ Available tools:
 
 ## Links
 
-- **GitHub:** https://github.com/PaulJPhilp/effect-regex
-- **npm:** https://www.npmjs.com/package/effect-regex
-- **Documentation:** https://github.com/PaulJPhilp/effect-regex#readme
-- **Issues:** https://github.com/PaulJPhilp/effect-regex/issues
+- **GitHub:** <https://github.com/PaulJPhilp/effect-regex>
+- **npm:** <https://www.npmjs.com/package/effect-regex>
+- **Documentation:** <https://github.com/PaulJPhilp/effect-regex#readme>
+- **Issues:** <https://github.com/PaulJPhilp/effect-regex/issues>
 
 ## What's Next
 
 Future releases will include:
+
 - Regex string → AST parsing (convert existing regexes to the builder API)
 - OpenAI provider for pattern generation
 - Local LLM support
