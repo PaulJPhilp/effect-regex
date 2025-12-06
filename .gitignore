@@ -43,3 +43,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .gemini/
 WARP.md
 effect-patterns-repo/
+
+# Package manager locks (root uses Bun, not npm)
+package-lock.json
