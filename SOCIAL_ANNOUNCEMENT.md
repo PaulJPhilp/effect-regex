@@ -4,7 +4,7 @@
 
 ### Main Announcement
 
-🎉 Introducing **effect-regex** v0.5.0 - Type-safe regex builder for TypeScript 
+🎉 **effect-regex** v0.6.0 is here - Type-safe regex builder for TypeScript 
 
 Build patterns with a fluent API that compiles to multiple dialects (JS, RE2, PCRE). 40+ standard patterns. MCP server integration for AI assistants. Production-ready.
 
@@ -17,7 +17,7 @@ Build patterns with a fluent API that compiles to multiple dialects (JS, RE2, PC
 
 ### Technical Thread
 
-1/ We just released **effect-regex** - a type-safe regex composition library for TypeScript built on the Effect framework.
+1/ **effect-regex v0.6.0** is out - continuing to deliver a type-safe regex composition library for TypeScript built on the Effect framework.
 
 Stop writing raw regex strings. Build patterns with a fluent API that's composable, testable, and type-safe.
 
@@ -76,9 +76,9 @@ Docs: https://github.com/PaulJPhilp/effect-regex
 
 ## LinkedIn
 
-**Announcing effect-regex v0.5.0 - Type-Safe Regex Builder for TypeScript**
+**Announcing effect-regex v0.6.0 - Type-Safe Regex Builder for TypeScript**
 
-I'm excited to announce the public release of effect-regex, a production-ready library that brings type safety and composability to regular expression building in TypeScript.
+I'm excited to announce the release of effect-regex v0.6.0, continuing to deliver a production-ready library that brings type safety and composability to regular expression building in TypeScript.
 
 **The Problem**
 Regular expressions are powerful but error-prone. Raw regex strings lack IDE support, are hard to test, and don't compose well. Switching between JS, RE2, and PCRE requires rewriting patterns.

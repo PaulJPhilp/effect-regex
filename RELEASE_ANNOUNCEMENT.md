@@ -1,8 +1,8 @@
-# Effect-Regex v0.5.0 - Initial Public Release
+# Effect-Regex v0.6.0 - Minor Release
 
-**Type-safe regex builder for TypeScript with multi-dialect support is now available.**
+**Type-safe regex builder for TypeScript with multi-dialect support continues to grow.**
 
-We're excited to announce the initial public release of **effect-regex**, a production-ready regex composition library built on the Effect framework.
+We're excited to announce **effect-regex v0.6.0**, bringing continued improvements and stability to our production-ready regex composition library built on the Effect framework.
 
 ## What is effect-regex?
 

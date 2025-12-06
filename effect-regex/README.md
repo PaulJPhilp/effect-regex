@@ -5,7 +5,7 @@
 
 A type-safe, composable regex builder for TypeScript using the Effect library. Build complex regex patterns with a fluent API that compiles to multiple dialects (JS, RE2, PCRE).
 
-**Current Version:** 0.5.0 (Initial Public Release)
+**Current Version:** 0.6.0
 
 ## Features
 
