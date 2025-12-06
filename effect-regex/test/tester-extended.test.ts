@@ -411,7 +411,7 @@ describe("Regex Tester - Extended Coverage", () => {
 
   describe("Empty and Edge Cases", () => {
     it("should handle empty test cases array", async () => {
-      const result = await Effect.runPromise(testRegex("test", "js", []));
+      const result = await Effect.runPromise(testRegex("test", [], "js"));
 
       expect(result.total).toBe(0);
       expect(result.passed).toBe(0);
