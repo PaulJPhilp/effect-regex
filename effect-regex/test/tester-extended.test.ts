@@ -21,7 +21,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("(?<greeting>\\w+) (?<subject>\\w+)", "js", testCases)
+        testRegex("(?<greeting>\\w+) (?<subject>\\w+)", testCases, "js")
       );
 
       expect(result.passed).toBe(1);
@@ -42,7 +42,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("(\\w+) (\\w+)", "js", testCases)
+        testRegex("(\\w+) (\\w+)", testCases, "js")
       );
 
       expect(result.passed).toBe(1);
@@ -61,7 +61,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("(\\w+) (\\w+)", "js", testCases)
+        testRegex("(\\w+) (\\w+)", testCases, "js")
       );
 
       expect(result.passed).toBe(0);
@@ -83,7 +83,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("test", "js", testCases)
+        testRegex("test", testCases, "js")
       );
 
       // This will fail because the pattern doesn't create array captures
@@ -102,7 +102,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("hello", "js", testCases)
+        testRegex("hello", testCases, "js")
       );
 
       expect(result.passed).toBe(0);
@@ -121,7 +121,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("test", "js", testCases)
+        testRegex("test", testCases, "js")
       );
 
       expect(result.failed).toBe(1);
@@ -140,7 +140,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex(pattern, "js", testCases, 50) // Very short timeout
+        testRegex(pattern, testCases, "js", 50) // Very short timeout
       );
 
       // Should either timeout or complete quickly
@@ -163,7 +163,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex(pattern, "js", testCases, 1000) // Longer timeout
+        testRegex(pattern, testCases, "js", 1000) // Longer timeout
       );
 
       // The test might pass but could generate warnings
@@ -181,7 +181,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex(pattern, "js", testCases, 10) // Very short timeout
+        testRegex(pattern, testCases, "js", 10) // Very short timeout
       );
 
       if (result.failed > 0) {
@@ -205,7 +205,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("test\\d+", "re2-sim", testCases)
+        testRegex("test\\d+", testCases, "re2-sim")
       );
 
       expect(result.passed).toBe(1);
@@ -221,7 +221,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("hello \\w+", "re2", testCases)
+        testRegex("hello \\w+", testCases, "re2")
       );
 
       expect(result.passed).toBe(1);
@@ -238,7 +238,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("[invalid(", "js", testCases) // Unclosed bracket
+        testRegex("[invalid(", testCases, "js") // Unclosed bracket
       );
 
       expect(result.passed).toBe(0);
@@ -265,7 +265,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("(unclosed", "js", testCases)
+        testRegex("(unclosed", testCases, "js")
       );
 
       expect(result.passed).toBe(0);
@@ -290,7 +290,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("\\d+", "js", testCases)
+        testRegex("\\d+", testCases, "js")
       );
 
       expect(result.passed).toBe(1);
@@ -314,7 +314,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("^\\d+$", "js", testCases)
+        testRegex("^\\d+$", testCases, "js")
       );
 
       expect(result.passed).toBe(3);
@@ -332,7 +332,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("^\\d+$", "js", testCases)
+        testRegex("^\\d+$", testCases, "js")
       );
 
       expect(result.passed).toBe(4);
@@ -349,7 +349,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("^\\d+$", "js", testCases)
+        testRegex("^\\d+$", testCases, "js")
       );
 
       expect(result.passed).toBe(2);
@@ -368,7 +368,7 @@ describe("Regex Tester - Extended Coverage", () => {
       const testCases: RegexTestCase[] = [{ input: "test", shouldMatch: true }];
 
       const result = await Effect.runPromise(
-        testRegex("test", "js", testCases)
+        testRegex("test", testCases, "js")
       );
 
       expect(result.timingMs).toBeGreaterThanOrEqual(0);
@@ -382,7 +382,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("test\\d", "js", testCases)
+        testRegex("test\\d", testCases, "js")
       );
 
       // Even though all passed, we don't get individual durations in successes
@@ -425,7 +425,7 @@ describe("Regex Tester - Extended Coverage", () => {
         { input: "test", shouldMatch: true },
       ];
 
-      const result = await Effect.runPromise(testRegex("", "js", testCases));
+      const result = await Effect.runPromise(testRegex("", testCases, "js"));
 
       // Empty pattern matches empty string and also matches at start of any string
       expect(result.passed).toBe(2);
@@ -435,7 +435,7 @@ describe("Regex Tester - Extended Coverage", () => {
       const testCases: RegexTestCase[] = [{ input: "", shouldMatch: false }];
 
       const result = await Effect.runPromise(
-        testRegex("\\d+", "js", testCases)
+        testRegex("\\d+", testCases, "js")
       );
 
       expect(result.passed).toBe(1);
@@ -456,7 +456,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex("(\\w+)(\\s\\w+)?", "js", testCases)
+        testRegex("(\\w+)(\\s\\w+)?", testCases, "js")
       );
 
       // The second group is optional and won't be captured
@@ -477,7 +477,7 @@ describe("Regex Tester - Extended Coverage", () => {
       ];
 
       const result = await Effect.runPromise(
-        testRegex(pattern, "js", testCases)
+        testRegex(pattern, testCases, "js")
       );
 
       expect(result.passed).toBe(1);

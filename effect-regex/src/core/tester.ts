@@ -85,8 +85,8 @@ export interface TestResult {
  * Catastrophic backtracking patterns are detected via timeout mechanism.
  *
  * @param pattern - Regex pattern string to test
- * @param dialect - Target dialect (js, re2-sim, or re2)
  * @param cases - Array of test cases to run
+ * @param dialect - Target dialect (js, re2-sim, or re2) (default: js)
  * @param timeoutMs - Timeout in milliseconds for each test case (default: 100)
  * @returns Effect that yields a TestResult with aggregated statistics
  * @example
@@ -98,7 +98,7 @@ export interface TestResult {
  *   }},
  *   { input: "no-match", shouldMatch: false }
  * ];
- * const result = await Effect.runPromise(testRegex(pattern, "js", cases));
+ * const result = await Effect.runPromise(testRegex(pattern, cases, "js"));
  * // result.passed === 2, result.failed === 0
  * ```
  */
